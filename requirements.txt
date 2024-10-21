@@ -1,0 +1,16 @@
+hydra-core==1.3.2
+hydra-colorlog==1.2.0
+hydra-optuna-sweeper==1.2.0
+
+rootutils
+monai==1.3.0
+
+mlflow
+tensorboard
+
+torch>=2.0.0
+lightning>=2.0.0
+rich
+tifffile
+
+segmentation-models-pytorch-3d

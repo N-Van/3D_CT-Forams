@@ -1,0 +1,30 @@
+_target_: ctforams.model.module.CTForamsLitModule
+
+defaults:
+  - _self_
+  - net: wrapped.yaml
+
+# compile model for faster training with pytorch 2.0
+compile: false
+scheduler_interval: epoch
+
+criterion:
+  _target_: monai.losses.GeneralizedDiceFocalLoss
+  include_background: true
+  to_onehot_y: false
+  sigmoid: true
+
+optimizer:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  lr: 0.001
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.OneCycleLR
+  _partial_: True
+  max_lr: ${model.optimizer.lr}
+  epochs: ${trainer.max_epochs}
+  steps_per_epoch: null
+  pct_start: 0.1

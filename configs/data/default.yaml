@@ -1,0 +1,20 @@
+_target_: ctforams.data.datamodule.CTForamsDataModule
+
+defaults:
+  - dataset@train_data: ctforams.yaml
+  - dataset@val_data: ctforams.yaml
+  - dataset@test_data: ctforams.yaml
+  - augmentation: default.yaml
+
+batch_size: 1
+num_workers: 0
+pin_memory: false
+crop_size: ${crop_size}
+
+train_data:
+  paths: ${paths.data_dir}/${data_exp}/train/paths.json
+  training: true
+val_data:
+  paths: ${paths.data_dir}/${data_exp}/val/paths.json
+test_data:
+  paths: ${paths.data_dir}/${data_exp}/test/paths.json

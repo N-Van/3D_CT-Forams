@@ -17,4 +17,8 @@
 
 ## Getting Started
 
+`conda create --name ctforams python=3.10`
+
+`pip install -r requirements.txt`
+
 ## Image prediction
