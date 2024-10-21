@@ -1,0 +1,10 @@
+/data
+logs/
+**/__pycache__/**
+*.egg-info
+.vscode
+*mlruns*
+.pytest*
+*.ipynb_checkpoints*
+outputs
+__pycache__
