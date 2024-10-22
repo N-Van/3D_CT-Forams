@@ -68,6 +68,8 @@ class CTForamsDataModule(LightningDataModule):
             self.data_train.init()
         if self.data_val is not None:
             self.data_val.init()
+        if self.data_test is not None:
+            self.data_test.init()
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Load data. Set variables: `self.data_train`, `self.data_val`, `self.data_test`.
