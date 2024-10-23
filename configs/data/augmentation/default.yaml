@@ -1,0 +1,5 @@
+_target_: monai.transforms.Compose
+
+defaults:
+  - transforms:
+      - monai_affine.yaml

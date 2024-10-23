@@ -1,0 +1,10 @@
+_target_: monai.transforms.RandAffined
+keys: ["image", "label"]
+prob: 0.5
+mode: ["bilinear", "nearest"]
+spatial_size:
+  - ${crop_size}
+  - ${crop_size}
+  - ${crop_size} # always same crop size
+rotate_range: [3.14, 3.14, 3.14] # Full range rotation
+scale_range: [0.1, 0.1, 0.1] # Scale between [0.9;1.1]

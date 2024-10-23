@@ -32,27 +32,8 @@ class CTForamsDataModule(LightningDataModule):
         self.data_val = val_data
         self.data_test = test_data
 
-        self.transform = monai.transforms.Compose(
-            [
-                monai.transforms.RandFlipd(keys=["image", "label"], prob=0.5),
-                monai.transforms.RandAffined(
-                    keys=["image", "label"],
-                    mode=("bilinear", "nearest"),
-                    prob=0,
-                    spatial_size=(crop_size, crop_size, crop_size),
-                    rotate_range=(np.pi, np.pi, np.pi),
-                    scale_range=(0.1, 0.1, 0.1),
-                ),
-                # monai.transforms.RandAdjustContrastd(
-                #     keys=["image"],
-                #     prob=0.5,
-                #     gamma=[0.5, 2.5],
-                #     retain_stats=True,
-                # ),
-            ]
-        )
-
-        self.data_train.aug = self.transform
+        self.transforms = augmentation
+        self.data_train.aug = self.transforms
 
         self.batch_size_per_device = batch_size
 
