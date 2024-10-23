@@ -7,6 +7,7 @@ import tifffile
 from monai.data.utils import dense_patch_slices
 from monai.inferers.utils import _get_scan_interval
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from ctforams.utils import RankedLogger
 
@@ -37,15 +38,16 @@ class CTForamsDataset(Dataset):
         self.positive_window_index, self.negative_window_index = self.separate_pos_neg_windows()
 
         # Done
+        log.info("Done")
 
     def separate_pos_neg_windows(self):
         positive_indexes = []
         negative_indexes = []
 
-        for i, window in enumerate(self.windows):
+        for i, window in tqdm(enumerate(self.windows)):
             x_i, window_slice = window.values()
             y = self.y[x_i][0][window_slice]
-            if np.count_nonzero(y) > 0:
+            if np.any(y):
                 positive_indexes.append(i)
             else:
                 negative_indexes.append(i)
