@@ -6,6 +6,7 @@ import tifffile
 from monai.data.utils import dense_patch_slices
 from monai.inferers.utils import _get_scan_interval
 from torch.utils.data import Dataset
+from pathlib import Path
 
 
 class CTForamsDataset(Dataset):
@@ -20,7 +21,7 @@ class CTForamsDataset(Dataset):
 
     def init(self):
         # Load pairs of image and labels as mem map
-        self.x, self.y = self.load_data_pairs()
+        self.x, self.y, self.names = self.load_data_pairs()
 
         # Compute all possible windows
         self.windows = self.compute_sequences_index()
@@ -46,6 +47,7 @@ class CTForamsDataset(Dataset):
     def load_data_pairs(self):
         x = []
         y = []
+        names = []
 
         with open(self.paths, "r") as paths_file:
             json_paths = json.load(paths_file)
@@ -54,13 +56,15 @@ class CTForamsDataset(Dataset):
             label_path = os.path.join(self.data_root, paths["label"])
             im = tifffile.memmap(im_path)
             label = tifffile.memmap(label_path)
+            name = Path(im_path).stem
 
             if len(im.shape) == 4 and im.shape[0] == 1:
                 im = im[0]
 
             x.append(im)
             y.append(label)
-        return x, y
+            names.append(name)
+        return x, y, names
 
     def compute_sequences_index(self):
         windows = []

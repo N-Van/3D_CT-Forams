@@ -9,6 +9,7 @@ from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig, OmegaConf
 from monai.optimizers import LearningRateFinder
 import numpy as np
+from lightning.pytorch.plugins.environments import SLURMEnvironment
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 # ------------------------------------------------------------------------------------ #
@@ -28,6 +29,9 @@ rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 # more info: https://github.com/ashleve/rootutils
 # ------------------------------------------------------------------------------------ #
 
+
+SLURMEnvironment.detect = lambda: False
+
 from ctforams.utils import (
     RankedLogger,
     extras,
@@ -36,6 +40,7 @@ from ctforams.utils import (
     instantiate_loggers,
     log_hyperparameters,
     task_wrapper,
+    DisabledSLURMEnvironment,
 )
 
 log = RankedLogger(__name__, rank_zero_only=True)
@@ -86,6 +91,7 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         cfg.trainer,
         callbacks=callbacks,
         logger=logger,
+        plugins=DisabledSLURMEnvironment(auto_requeue=False),
     )
 
     # Benchmark all conv algorithm to use to best one
