@@ -1,0 +1,5 @@
+simulate_low_res:
+  _target_: monai.transforms.RandSimulateLowResolutiond
+  keys: ["image"]
+  prob: 0.5
+  zoom_range: [0.25, 1.0]

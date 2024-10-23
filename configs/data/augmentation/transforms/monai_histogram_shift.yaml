@@ -1,0 +1,5 @@
+histogram_shift:
+  _target_: monai.transforms.RandHistogramShiftd
+  keys: ["image"]
+  prob: 0.5
+  num_control_points: 3

@@ -17,6 +17,7 @@ class CTForamsLitModule(LightningModule):
         criterion=None,
         compile=False,
         scheduler_interval: str = "step",
+        criterion_on_center=False,
     ) -> None:
         super().__init__()
 
@@ -25,6 +26,7 @@ class CTForamsLitModule(LightningModule):
         self.save_hyperparameters(logger=False, ignore=["net", "criterion"])
 
         self.net = net
+        self.criterion_on_center = criterion_on_center
 
         # loss function
         self.criterion = criterion
@@ -80,6 +82,14 @@ class CTForamsLitModule(LightningModule):
         """
         x, y = batch
         outputs = self.forward(x)
+
+        if self.criterion_on_center:
+            crop_size = outputs.shape[-1]
+            center = crop_size // 2
+            quarter_size = crop_size // 4
+            cslice = slice(center - quarter_size, center + quarter_size)
+            outputs = outputs[:, :, cslice, cslice, cslice]
+            y = outputs[:, :, cslice, cslice, cslice]
 
         loss = self.criterion(outputs, y)
 

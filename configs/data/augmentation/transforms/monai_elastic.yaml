@@ -1,0 +1,13 @@
+elastic:
+  _target_: monai.transforms.Rand3DElasticd
+  keys: ["image", "label"]
+  mode: ["bilinear", "nearest"]
+  padding_mode: ["zeros", "zeros"]
+  prob: 0.5
+  sigma_range: [5, 7]
+  magnitude_range: [20, 100]
+  rotate_range: null
+  shear_range: null
+  translate_range: null
+  scale_range: null
+  spatial_size: null

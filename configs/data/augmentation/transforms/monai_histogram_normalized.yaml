@@ -1,0 +1,4 @@
+histogram_normalized:
+  _target_: monai.transforms.HistogramNormalized
+  keys: ["image"]
+  num_bins: 1

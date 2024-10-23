@@ -1,4 +1,5 @@
 import json
+import os
 
 import numpy as np
 import tifffile
@@ -8,8 +9,9 @@ from torch.utils.data import Dataset
 
 
 class CTForamsDataset(Dataset):
-    def __init__(self, paths, crop_size, max_steps_per_epoch, training=False):
+    def __init__(self, data_root, paths, crop_size, max_steps_per_epoch, training=False):
         super().__init__()
+        self.data_root = data_root
         self.paths = paths
         self.crop_size = crop_size
         self.training = training
@@ -34,7 +36,7 @@ class CTForamsDataset(Dataset):
 
         for i, window in enumerate(self.windows):
             x_i, window_slice = window.values()
-            y = self.y[x_i][window_slice]
+            y = self.y[x_i][0][window_slice]
             if np.count_nonzero(y) > 0:
                 positive_indexes.append(i)
             else:
@@ -48,7 +50,8 @@ class CTForamsDataset(Dataset):
         with open(self.paths, "r") as paths_file:
             json_paths = json.load(paths_file)
         for paths in json_paths:
-            im_path, label_path = paths["image"], paths["label"]
+            im_path = os.path.join(self.data_root, paths["image"])
+            label_path = os.path.join(self.data_root, paths["label"])
             im = tifffile.memmap(im_path)
             label = tifffile.memmap(label_path)
 

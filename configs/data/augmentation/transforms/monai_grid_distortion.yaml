@@ -1,0 +1,8 @@
+grid_distortion:
+  _target_: monai.transforms.RandGridDistortiond
+  keys: ["image", "label"]
+  prob: 0.5
+  num_cells: 5
+  distort_limit: [-0.03, 0.03]
+  mode: ["bilinear", "nearest"]
+  padding_mode: ["zeros", "zeros"]

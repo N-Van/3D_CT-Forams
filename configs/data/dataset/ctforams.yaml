@@ -3,3 +3,4 @@ _target_: ctforams.data.dataset.ctforams.CTForamsDataset
 paths: null
 crop_size: ${crop_size}
 max_steps_per_epoch: ${max_steps_per_epoch}
+data_root: ${paths.root_dir}

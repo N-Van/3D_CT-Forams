@@ -1,4 +1,4 @@
-_target_: monai.transforms.Compose
+_target_: ctforams.data.augmentation.AugmentationWrapper
 
 defaults:
   - transforms:
