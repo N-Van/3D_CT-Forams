@@ -45,6 +45,7 @@ class CTForamsDataModule(LightningDataModule):
 
         Do not use it to assign state (self.x = y).
         """
+        log.info("Preparing data train/val/test...")
         if self.data_train is not None:
             self.data_train.init()
         if self.data_val is not None:

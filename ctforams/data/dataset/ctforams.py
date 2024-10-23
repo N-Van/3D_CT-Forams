@@ -1,12 +1,16 @@
 import json
 import os
+from pathlib import Path
 
 import numpy as np
 import tifffile
 from monai.data.utils import dense_patch_slices
 from monai.inferers.utils import _get_scan_interval
 from torch.utils.data import Dataset
-from pathlib import Path
+
+from ctforams.utils import RankedLogger
+
+log = RankedLogger(__name__, rank_zero_only=True)
 
 
 class CTForamsDataset(Dataset):
@@ -20,12 +24,15 @@ class CTForamsDataset(Dataset):
         self.max_steps_per_epoch = max_steps_per_epoch
 
     def init(self):
+        log.info("Loading data pairs...")
         # Load pairs of image and labels as mem map
         self.x, self.y, self.names = self.load_data_pairs()
 
+        log.info("Compute all possible windows from data...")
         # Compute all possible windows
         self.windows = self.compute_sequences_index()
 
+        log.info("Splitting data into positive/negative samples")
         # Create two lists: track positive/negative samples
         self.positive_window_index, self.negative_window_index = self.separate_pos_neg_windows()
 
