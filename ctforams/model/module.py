@@ -143,7 +143,7 @@ class CTForamsLitModule(LightningModule):
 
         binary_preds = torch.nn.functional.sigmoid(preds)
         self.safe_update_metric(self.val_acc, binary_preds.flatten(), targets.flatten())
-        self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val/iou", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_validation_epoch_end(self) -> None:
         "Lightning hook that is called when a validation epoch ends."
