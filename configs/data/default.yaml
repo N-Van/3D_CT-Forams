@@ -12,9 +12,12 @@ pin_memory: false
 crop_size: ${crop_size}
 
 train_data:
-  paths: ${paths.data_dir}/${data_exp}/train/paths.json
+  hdf5_path: ${paths.data_dir}/${hdf5_name}
+  group_name: train
   training: true
 val_data:
-  paths: ${paths.data_dir}/${data_exp}/val/paths.json
+  hdf5_path: ${paths.data_dir}/${hdf5_name}
+  group_name: val
 test_data:
-  paths: ${paths.data_dir}/${data_exp}/test/paths.json
+  hdf5_path: ${paths.data_dir}/${hdf5_name}
+  group_name: val

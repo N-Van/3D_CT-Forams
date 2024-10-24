@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 
+import h5py
 import numpy as np
 import tifffile
 from monai.data.utils import dense_patch_slices
@@ -15,10 +16,10 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 
 class CTForamsDataset(Dataset):
-    def __init__(self, data_root, paths, crop_size, max_steps_per_epoch, training=False):
+    def __init__(self, hdf5_path, group_name, crop_size, max_steps_per_epoch, training=False):
         super().__init__()
-        self.data_root = data_root
-        self.paths = paths
+        self.hdf5_path = hdf5_path
+        self.group_name = group_name
         self.crop_size = crop_size
         self.training = training
         self.aug = None
@@ -27,7 +28,7 @@ class CTForamsDataset(Dataset):
     def init(self):
         log.info("Loading data pairs...")
         # Load pairs of image and labels as mem map
-        self.x, self.y, self.names = self.load_data_pairs()
+        self.x, self.y, self.names = self.load_hdf5()
 
         log.info("Compute all possible windows from data...")
         # Compute all possible windows
@@ -43,7 +44,7 @@ class CTForamsDataset(Dataset):
     def get_total_num_windows(self):
         log.info("Loading data pairs...")
         # Load pairs of image and labels as mem map
-        self.x, self.y, self.names = self.load_data_pairs()
+        self.x, self.y, self.names = self.load_hdf5()
 
         log.info("Compute all possible windows from data...")
         # Compute all possible windows
@@ -59,33 +60,36 @@ class CTForamsDataset(Dataset):
 
         for i, window in tqdm(enumerate(self.windows)):
             x_i, window_slice = window.values()
-            y = self.y[x_i][0][window_slice]
+            y = self.y[x_i][window_slice]
             if np.any(y):
                 positive_indexes.append(i)
             else:
                 negative_indexes.append(i)
         return positive_indexes, negative_indexes
 
-    def load_data_pairs(self):
+    def load_hdf5(self):
         x = []
         y = []
         names = []
 
-        with open(self.paths, "r") as paths_file:
-            json_paths = json.load(paths_file)
-        for paths in json_paths:
-            im_path = os.path.join(self.data_root, paths["image"])
-            label_path = os.path.join(self.data_root, paths["label"])
-            im = tifffile.memmap(im_path, mode="r")
-            label = tifffile.memmap(label_path, mode="r")
-            name = Path(im_path).stem
+        assert os.path.exists(self.hdf5_path), f"Path {self.hdf5_path} does not exist."
+
+        self.hf = h5py.File(self.hdf5_path, "r")
+        ds_group = self.hf[self.group_name]
+        images = ds_group["im"]
+        labels = ds_group["label"]
+        for image_name in images.keys():
+            im = images[image_name]
+            label = labels[image_name]
 
             if len(im.shape) == 4 and im.shape[0] == 1:
                 im = im[0]
+            if len(label.shape) == 4 and label.shape[0] == 1:
+                label = label[0]
 
             x.append(im)
             y.append(label)
-            names.append(name)
+            names.append(image_name)
         return x, y, names
 
     def compute_sequences_index(self):
@@ -133,7 +137,7 @@ class CTForamsDataset(Dataset):
         # M,X,Y,Z with M the tiff image index
         x = self.x[x_i][window_slice]
         # M,C,X,Y,Z with C the class channel
-        y = self.y[x_i][0][window_slice]
+        y = self.y[x_i][window_slice]
 
         # Normalize x data range
         x = self.norm_patch(x)

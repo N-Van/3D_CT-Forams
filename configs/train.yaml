@@ -42,7 +42,7 @@ seed: 12345
 
 date: ${now:%Y-%m-%d}_${now:%H-%M-%S-%f}
 
-data_exp: default
+hdf5_name: Aq1T0_0.hdf5
 crop_size: 64
 max_steps_per_epoch: 1000
 monitor_val: "val/loss"
