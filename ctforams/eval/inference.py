@@ -51,11 +51,15 @@ def segmentation_inference(
         # Iterate over Z
         n_over_z = int(np.ceil(x.shape[-1] / z_step))
         for k in tqdm(range(n_over_z), desc="Iterating over Z slices", total=n_over_z, leave=False):
+
             z_start = min(k * z_step, x.shape[-1] - z_size)
             z_end = z_start + z_size
             sub_x = x[..., z_start:z_end]
             sub_y = infer_part(sub_x, dataset, crop_size, batch_size, overlap, model, device)
             y[..., z_start:z_end] = np.maximum(y[..., z_start:z_end], sub_y)
+
+            # DEBUG
+            break
 
         if output_dir is not None:
             tif.imwrite(

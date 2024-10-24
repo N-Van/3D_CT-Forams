@@ -76,8 +76,8 @@ class CTForamsDataset(Dataset):
         for paths in json_paths:
             im_path = os.path.join(self.data_root, paths["image"])
             label_path = os.path.join(self.data_root, paths["label"])
-            im = tifffile.memmap(im_path)
-            label = tifffile.memmap(label_path)
+            im = tifffile.memmap(im_path, mode="r")
+            label = tifffile.memmap(label_path, mode="r")
             name = Path(im_path).stem
 
             if len(im.shape) == 4 and im.shape[0] == 1:
