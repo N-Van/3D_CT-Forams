@@ -150,4 +150,6 @@ class CTForamsDataset(Dataset):
         return x, y
 
     def __len__(self):
-        return min(len(self.windows), self.max_steps_per_epoch)
+        if self.training:
+            return min(len(self.windows), self.max_steps_per_epoch)
+        return len(self.windows)
