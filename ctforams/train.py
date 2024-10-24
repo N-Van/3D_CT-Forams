@@ -69,8 +69,7 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
             scheduler_name = cfg.get("model").get("scheduler").get("_target_")
             if scheduler_name == "torch.optim.lr_scheduler.OneCycleLR":
                 # Get data quant by forcing data loading
-                datamodule.data_train.init()
-                total_steps = len(datamodule.data_train)
+                total_steps = datamodule.data_train.get_total_num_windows()
                 # Set number of steps
                 steps_per_epoch = int(np.ceil(total_steps / int(cfg.get("data").get("batch_size"))))
                 # Override

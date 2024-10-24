@@ -40,6 +40,19 @@ class CTForamsDataset(Dataset):
         # Done
         log.info("Done")
 
+    def get_total_num_windows(self):
+        log.info("Loading data pairs...")
+        # Load pairs of image and labels as mem map
+        self.x, self.y, self.names = self.load_data_pairs()
+
+        log.info("Compute all possible windows from data...")
+        # Compute all possible windows
+        windows = self.compute_sequences_index()
+        self.x = None
+        self.y = None
+        self.names = None
+        return len(windows)
+
     def separate_pos_neg_windows(self):
         positive_indexes = []
         negative_indexes = []
