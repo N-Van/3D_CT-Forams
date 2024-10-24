@@ -29,3 +29,5 @@ deterministic: False
 accumulate_grad_batches: 1
 
 detect_anomaly: False
+
+profiler: null
