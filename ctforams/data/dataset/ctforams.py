@@ -51,7 +51,7 @@ class CTForamsDataset(Dataset):
         self.x = None
         self.y = None
         self.names = None
-        return len(windows)
+        return min(len(windows), self.max_steps_per_epoch)
 
     def separate_pos_neg_windows(self):
         positive_indexes = []
