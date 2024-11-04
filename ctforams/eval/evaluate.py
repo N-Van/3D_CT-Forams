@@ -41,8 +41,8 @@ def evaluate_segmentation(y_hat, y, names, threshold, iou_threshold, min_weighte
     for i in range(len(y)):
         # Threshold both
         pred = (y_hat[i] > threshold).astype(np.uint8)
-        truth = (y[i] > 0).astype(np.uint8)
-        truth = np.squeeze(truth, axis=0)
+        print(y[i])
+        truth = (y[i][:] > 0).astype(np.uint8)
 
         print(pred.shape, truth.shape)
 

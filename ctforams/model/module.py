@@ -80,7 +80,8 @@ class CTForamsLitModule(LightningModule):
             - A tensor of predictions.
             - A tensor of target labels.
         """
-        x, y = batch
+        x, y, weights = batch
+
         outputs = self.forward(x)
 
         if self.criterion_on_center:
@@ -92,6 +93,9 @@ class CTForamsLitModule(LightningModule):
             y = outputs[:, :, cslice, cslice, cslice]
 
         loss = self.criterion(outputs, y)
+
+        loss = loss * weights
+        loss = loss.sum() / (weights.sum() + 1e-8)
 
         return loss, outputs, y
 
@@ -112,7 +116,8 @@ class CTForamsLitModule(LightningModule):
         self.log("train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=True)
 
         binary_preds = torch.nn.functional.sigmoid(preds)
-        self.safe_update_metric(self.train_acc, binary_preds.flatten(), targets.flatten())
+        binary_targets = targets > 0.5
+        self.safe_update_metric(self.train_acc, binary_preds.flatten(), binary_targets.flatten())
         self.log("train/iou", self.train_acc, on_step=False, on_epoch=True, prog_bar=True)
 
         if self.hparams.scheduler is not None:
@@ -142,7 +147,8 @@ class CTForamsLitModule(LightningModule):
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
 
         binary_preds = torch.nn.functional.sigmoid(preds)
-        self.safe_update_metric(self.val_acc, binary_preds.flatten(), targets.flatten())
+        binary_targets = targets > 0.5
+        self.safe_update_metric(self.val_acc, binary_preds.flatten(), binary_targets.flatten())
         self.log("val/iou", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_validation_epoch_end(self) -> None:

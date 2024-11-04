@@ -16,3 +16,5 @@ tifffile
 segmentation-models-pytorch-3d
 connected-components-3d
 h5py
+onnx
+onnxruntime

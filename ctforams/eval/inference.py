@@ -44,19 +44,17 @@ def segmentation_inference(
     for i in tqdm(range(len(dataset.x)), desc="Running segmentation inference..."):
         # X,Y,Z memmap
         x = dataset.x[i]
-        print(f"Inference on volume {x.shape}")
 
         y = np.zeros_like(x, dtype=np.uint8)
 
         # Iterate over Z
         n_over_z = int(np.ceil(x.shape[-1] / z_step))
         for k in tqdm(range(n_over_z), desc="Iterating over Z slices", total=n_over_z, leave=False):
-
             z_start = min(k * z_step, x.shape[-1] - z_size)
             z_end = z_start + z_size
             sub_x = x[..., z_start:z_end]
             sub_y = infer_part(sub_x, dataset, crop_size, batch_size, overlap, model, device)
-            y[..., z_start:z_end] = np.maximum(y[..., z_start:z_end], sub_y)
+            y[..., z_start:z_end] = sub_y
 
             # DEBUG
             break
@@ -96,7 +94,13 @@ def infer_part(x, dataset, crop_size, batch_size, overlap, model, device):
             progress=True,
         )
 
+    y = torch.nn.functional.sigmoid(y)
     y = y.detach().cpu().numpy()
     # FP32 to uint8 to limit memory usage
     y = (y * 255).astype(np.uint8)
+
+    # Remove batch dim
+    y = np.squeeze(y, axis=0)
+    # Remove channel dim
+    y = np.squeeze(y, axis=0)
     return y

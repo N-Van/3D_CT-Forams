@@ -151,7 +151,15 @@ class CTForamsDataset(Dataset):
             augmented = self.aug({"image": x, "label": y})
             x, y = augmented["image"], augmented["label"]
 
-        return x, y
+        # Compute loss on all pixels
+        weights = np.ones_like(y)
+
+        # Contains object inside
+        if np.count_nonzero(y) > 0:
+            # compute loss on high confidence pixels only
+            weights[y < 0.5] = 0.0
+
+        return x, y, weights
 
     def __len__(self):
         if self.training:
