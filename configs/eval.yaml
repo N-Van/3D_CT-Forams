@@ -9,3 +9,4 @@ iou_threshold: 0.000001
 min_weighted_prob: 0.1
 device: cuda
 lightning_test: false
+progress: false

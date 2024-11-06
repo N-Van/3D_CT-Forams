@@ -109,6 +109,7 @@ def evaluate_segmentation(cfg: DictConfig):
         iou_threshold=cfg.iou_threshold,
         min_weighted_prob=cfg.min_weighted_prob,
         output_dir=output_dir,
+        progress=cfg.progress,
     )
 
     metric_dict = trainer.callback_metrics

@@ -18,6 +18,7 @@ def infer_and_evaluate_segmentation(
     iou_threshold=0.1,
     min_weighted_prob=0.1,
     output_dir=None,
+    progress=False,
 ):
     y_hat = segmentation_inference(
         dataset=dataset,
@@ -26,6 +27,7 @@ def infer_and_evaluate_segmentation(
         crop_size=crop_size,
         batch_size=batch_size,
         output_dir=output_dir,
+        progress=progress,
     )
     y = dataset.y
 

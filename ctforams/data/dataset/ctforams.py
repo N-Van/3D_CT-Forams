@@ -146,6 +146,12 @@ class CTForamsDataset(Dataset):
         x = np.expand_dims(x, axis=0)
         y = np.expand_dims(y, axis=0)
 
+        if y.dtype == np.uint8:
+            y = y.astype(np.float32) / 255.0
+
+        assert y.min() >= 0 and y.max() <= 1.0
+        assert y.dtype == np.float32
+
         # Augment sample if train data
         if self.aug is not None:
             augmented = self.aug({"image": x, "label": y})
@@ -155,9 +161,9 @@ class CTForamsDataset(Dataset):
         weights = np.ones_like(y)
 
         # Contains object inside
-        if np.count_nonzero(y) > 0:
-            # compute loss on high confidence pixels only
-            weights[y < 0.5] = 0.0
+        # if np.count_nonzero(y) > 0:
+        #     # compute loss on high confidence pixels only
+        #     weights[y < 0.5] = 0.0
 
         return x, y, weights
 

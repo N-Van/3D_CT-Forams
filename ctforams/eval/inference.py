@@ -10,9 +10,9 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 
 def segmentation_inference(
-    dataset, model, device, crop_size, batch_size, overlap=0.5, output_dir=None
+    dataset, model, device, crop_size, batch_size, overlap=0.5, output_dir=None, progress=False
 ):
-    torch.backends.cudnn.benchmark = True
+    # torch.backends.cudnn.benchmark = True
 
     if output_dir is not None:
         os.makedirs(output_dir, exist_ok=True)
@@ -45,6 +45,8 @@ def segmentation_inference(
         # X,Y,Z memmap
         x = dataset.x[i]
 
+        print(f"Input shape: {x.shape}")
+
         y = np.zeros_like(x, dtype=np.uint8)
 
         # Iterate over Z
@@ -53,7 +55,9 @@ def segmentation_inference(
             z_start = min(k * z_step, x.shape[-1] - z_size)
             z_end = z_start + z_size
             sub_x = x[..., z_start:z_end]
-            sub_y = infer_part(sub_x, dataset, crop_size, batch_size, overlap, model, device)
+            sub_y = infer_part(
+                sub_x, dataset, crop_size, batch_size, overlap, model, device, progress
+            )
             y[..., z_start:z_end] = sub_y
 
         if output_dir is not None:
@@ -68,7 +72,7 @@ def segmentation_inference(
     return predictions
 
 
-def infer_part(x, dataset, crop_size, batch_size, overlap, model, device):
+def infer_part(x, dataset, crop_size, batch_size, overlap, model, device, progress):
     x = dataset.norm_patch(x)
 
     x = torch.tensor(x, device="cpu")
@@ -88,7 +92,7 @@ def infer_part(x, dataset, crop_size, batch_size, overlap, model, device):
             mode="gaussian",  # weighted sum
             sw_device=device,  # perform inference on device
             device=device,  # hold the full tensor on cpu
-            progress=False,
+            progress=progress,
         )
 
     y = torch.nn.functional.sigmoid(y)
