@@ -99,7 +99,7 @@ def evaluate_segmentation(cfg: DictConfig):
     device_name = cfg.device
     net = model.net.to(device_name)
 
-    stats, info = infer_and_evaluate_segmentation(
+    stats = infer_and_evaluate_segmentation(
         datamodule.data_test,
         net,
         device=device_name,
@@ -113,7 +113,7 @@ def evaluate_segmentation(cfg: DictConfig):
 
     metric_dict = trainer.callback_metrics
     mlflow_logger.log_metrics(stats)
-    return stats, info, output_dir, metric_dict
+    return stats, output_dir, metric_dict
 
 
 def evaluate(cfg) -> Tuple[Dict[str, Any], Dict[str, Any]]:
@@ -127,7 +127,7 @@ def evaluate(cfg) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
 
     stats = {}
-    seg_stats, _, output_dir, _ = evaluate_segmentation(cfg)
+    seg_stats, output_dir, _ = evaluate_segmentation(cfg)
     stats["segmentation_results"] = seg_stats
 
     print("Final results:")

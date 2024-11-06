@@ -3,7 +3,7 @@
 model_dir: ???
 hydra_dir: .hydra
 ckpt_dir: checkpoints
-ckpt_name: last.ckpt
+ckpt_name: best.ckpt
 threshold: 0.5
 iou_threshold: 0.000001
 min_weighted_prob: 0.1

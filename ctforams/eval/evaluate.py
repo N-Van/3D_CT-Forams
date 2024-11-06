@@ -1,7 +1,11 @@
-from ctforams.eval.inference import segmentation_inference
+from typing import List, Tuple
+
 import cc3d
 import numpy as np
-from scipy.spatial import KDTree
+import tifffile as tif
+from tqdm import tqdm
+
+from ctforams.eval.inference import segmentation_inference
 
 
 def infer_and_evaluate_segmentation(
@@ -36,15 +40,68 @@ def infer_and_evaluate_segmentation(
     )
 
 
+def compute_iou(outputs: np.array, labels: np.array, epsilon=1e-4):
+    intersection = (outputs & labels).sum()
+    union = (outputs | labels).sum()
+    iou = (intersection + epsilon) / (union + epsilon)
+    return iou
+
+
+def iterative_matching(dist_mat: np.ndarray, max_distance: float) -> List[Tuple[int, int]]:
+    """
+    Iteratively match items in a distance matrix using a threshold value.
+
+    Parameters
+    ----------
+    dist_mat : np.ndarray
+        The distance matrix to be matched.
+    max_distance : float
+        The maximum distance between two items for them to be considered a match.
+
+    Returns
+    -------
+    matched_items : List[Tuple[int, int]]
+        A list of tuples containing the indices of the matched items in the distance matrix.
+    """
+    matched_items = []
+
+    cdist_mat = dist_mat.copy()
+    max_value = np.max(cdist_mat) + 1
+
+    while np.min(cdist_mat) < max_value:
+        # Find the min value
+        i, j = np.unravel_index(cdist_mat.argmin(), cdist_mat.shape)
+
+        # If the minimum distance is above the threshold it means
+        # that we won't have anymore matches so we stop
+        if cdist_mat[i, j] >= max_distance:
+            break
+
+        matched_items.append((i, j))
+
+        # "Disable" the true and pred items by setting their distance to
+        # the max value + 1
+        # This is a trick to avoid counting true and pred elements twice
+        cdist_mat[i, :] = max_value
+        cdist_mat[:, j] = max_value
+
+    return matched_items
+
+
 def evaluate_segmentation(y_hat, y, names, threshold, iou_threshold, min_weighted_pro, output_dir):
     # For each volume
-    for i in range(len(y)):
+    uint_8_th = int(threshold * 255)
+
+    TP, FP, FN = 0, 0, 0
+
+    for i in tqdm(range(len(y))):
         # Threshold both
-        pred = (y_hat[i] > threshold).astype(np.uint8)
-        print(y[i])
+        pred = (y_hat[i] > uint_8_th).astype(np.uint8)
         truth = (y[i][:] > 0).astype(np.uint8)
 
-        print(pred.shape, truth.shape)
+        # Binary [0;1] to [0;255] uint8
+        pred *= 255
+        truth *= 255
 
         # Get all 3D ccs from both volume y and y_hat
         pred_ccs = cc3d.connected_components(pred)
@@ -54,20 +111,54 @@ def evaluate_segmentation(y_hat, y, names, threshold, iou_threshold, min_weighte
         pred_stats = cc3d.statistics(pred_ccs)
         truth_stats = cc3d.statistics(truth_ccs)
 
-        true_bboxes = []
-        #
-        for true_bbox in truth_stats["bounding_boxes"]:
-            true_rect = BBox(true_bbox)
-            for pred_bbox in pred_stats["bounding_boxes"]:
-                pred_rect = BBox(pred_bbox)
+        # Skip first (bg)
+        true_bboxes = truth_stats["bounding_boxes"][1:]
+        pred_bboxes = pred_stats["bounding_boxes"][1:]
 
-                if true_rect.intersects(pred_rect):
-                    print("intersection")
-                    print(true_rect)
-                    print(pred_rect)
+        n_true = len(true_bboxes)
+        n_pred = len(pred_bboxes)
 
-        # Check for all intersections above iou threshold on bounding boxes
-        # If it passes, then check real iou
+        tp, fn, fp = 0, 0, 0
+
+        if n_true == 0:
+            fp = n_pred
+        elif n_pred == 0:
+            fn = n_true
+        else:
+            iou_matrix = np.zeros((len(true_bboxes), len(pred_bboxes)), np.float32)
+
+            for i, true_bbox in enumerate(true_bboxes):
+                true_rect = BBox(true_bbox)
+                for j, pred_bbox in enumerate(pred_bboxes):
+                    pred_rect = BBox(pred_bbox)
+
+                    if true_rect.intersects(pred_rect):
+
+                        # Merge both rectangle to get area of interest for iou optimization
+                        roi = BBox.merge_as_slices(true_rect, pred_rect)
+
+                        # Get both pred and true roi
+                        pred_roi = pred[roi]
+                        truth_roi = truth[roi]
+
+                        # Compute iou
+                        iou = compute_iou(pred_roi, truth_roi)
+                        # We use inverse iou since the matching algorithm
+                        # match items that are the closest
+                        # ie 0.1 is close while 1.0 is far
+                        iou_matrix[i, j] = 1.0 - iou
+
+            matched_items = iterative_matching(iou_matrix, 1.0 - iou_threshold)
+            tp = len(matched_items)
+            fp = iou_matrix.shape[1] - tp
+            fn = iou_matrix.shape[0] - tp
+
+        TP += tp
+        FP += fp
+        FN += fn
+
+    metrics = {"tp": TP, "fp": FP, "fn": FN}
+    return metrics
 
 
 class Segment(object):
@@ -102,3 +193,6 @@ class BBox(object):
         z_start = min(a.z_seg.start, b.z_seg.start)
         z_end = min(a.z_seg.end, b.z_seg.end)
         return slice(x_start, x_end), slice(y_start, y_end), slice(z_start, z_end)
+
+    def __str__(self):
+        return f"x=[{self.x_seg.start};{self.x_seg.end}] y=[{self.y_seg.start};{self.y_seg.end}] z=[{self.z_seg.start};{self.z_seg.end}]"

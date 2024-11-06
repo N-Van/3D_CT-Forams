@@ -56,9 +56,6 @@ def segmentation_inference(
             sub_y = infer_part(sub_x, dataset, crop_size, batch_size, overlap, model, device)
             y[..., z_start:z_end] = sub_y
 
-            # DEBUG
-            break
-
         if output_dir is not None:
             tif.imwrite(
                 os.path.join(output_dir, f"{dataset.names[i]}.tif"),
@@ -91,12 +88,12 @@ def infer_part(x, dataset, crop_size, batch_size, overlap, model, device):
             mode="gaussian",  # weighted sum
             sw_device=device,  # perform inference on device
             device=device,  # hold the full tensor on cpu
-            progress=True,
+            progress=False,
         )
 
     y = torch.nn.functional.sigmoid(y)
     y = y.detach().cpu().numpy()
-    # FP32 to uint8 to limit memory usage
+    # FP32 to uint8 to limit memory usagey[i
     y = (y * 255).astype(np.uint8)
 
     # Remove batch dim
