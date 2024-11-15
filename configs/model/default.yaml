@@ -12,7 +12,7 @@ criterion:
   _target_: monai.losses.GeneralizedDiceFocalLoss
   include_background: true
   to_onehot_y: false
-  reduction: "none"
+  # reduction: "none"
   sigmoid: true
 
 optimizer:

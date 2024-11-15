@@ -94,8 +94,8 @@ class CTForamsLitModule(LightningModule):
 
         loss = self.criterion(outputs, y)
 
-        loss = loss * weights
-        loss = loss.sum() / (weights.sum() + 1e-8)
+        # loss = loss * weights
+        # loss = loss.sum() / (weights.sum() + 1e-8)
 
         return loss, outputs, y
 

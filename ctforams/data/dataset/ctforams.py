@@ -139,7 +139,7 @@ class CTForamsDataset(Dataset):
         # Extract window
         # M,X,Y,Z with M the tiff image index
         x = self.x[x_i][window_slice]
-        # M,C,X,Y,Z with C the class channel
+        # M,X,Y,Z with C the class channel
         y = self.y[x_i][window_slice]
 
         # Normalize x data range
