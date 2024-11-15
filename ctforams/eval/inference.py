@@ -35,10 +35,12 @@ def segmentation_inference(
     # Make sure model is in eval mode
     model.eval()
 
-    predictions = []
+    predictions_paths = {}
 
     z_size = crop_size[0]
     z_step = z_size // 2
+
+    assert output_dir is not None, "You must set the output dir"
 
     # Loop over volumes
     for i in tqdm(range(len(dataset.x)), desc="Running segmentation inference..."):
@@ -46,8 +48,16 @@ def segmentation_inference(
         x = dataset.x[i]
 
         print(f"Input shape: {x.shape}")
+        output_path = os.path.join(output_dir, f"{dataset.names[i]}.tif")
+        print(f"Adding {dataset.names[i]}")
+        predictions_paths[dataset.names[i]] = output_path
 
-        y = np.zeros_like(x, dtype=np.uint8)
+        # DEBUG ??
+        if os.path.exists(output_path):
+            continue
+
+        # Create a memmap of the same shape directly on disk to avoid using too much memory
+        y = tif.memmap(output_path, shape=x.shape, dtype=np.uint8)
 
         # Iterate over Z
         n_over_z = int(np.ceil(x.shape[-1] / z_step))
@@ -55,21 +65,15 @@ def segmentation_inference(
             z_start = min(k * z_step, x.shape[-1] - z_size)
             z_end = z_start + z_size
             sub_x = x[..., z_start:z_end]
+            # Infer
             sub_y = infer_part(
                 sub_x, dataset, crop_size, batch_size, overlap, model, device, progress
             )
-            y[..., z_start:z_end] = sub_y
+            # Write data to memmap
+            # Compute the mean (but should be weighted by a gaussian)
+            y[..., z_start:z_end] = (y[..., z_start:z_end] // 2) + (sub_y // 2)
 
-        if output_dir is not None:
-            tif.imwrite(
-                os.path.join(output_dir, f"{dataset.names[i]}.tif"),
-                y,
-                bigtiff=True,
-                compression="zlib",
-            )
-
-        predictions.append(y)
-    return predictions
+    return predictions_paths
 
 
 def infer_part(x, dataset, crop_size, batch_size, overlap, model, device, progress):

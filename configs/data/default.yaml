@@ -20,4 +20,4 @@ val_data:
   group_name: val
 test_data:
   hdf5_path: ${paths.data_dir}/${hdf5_name}
-  group_name: val
+  group_name: test

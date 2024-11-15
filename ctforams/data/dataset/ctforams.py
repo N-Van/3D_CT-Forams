@@ -25,18 +25,19 @@ class CTForamsDataset(Dataset):
         self.aug = None
         self.max_steps_per_epoch = max_steps_per_epoch
 
-    def init(self):
+    def init(self, compute_windows=True):
         log.info("Loading data pairs...")
         # Load pairs of image and labels as mem map
         self.x, self.y, self.names = self.load_hdf5()
 
-        log.info("Compute all possible windows from data...")
-        # Compute all possible windows
-        self.windows = self.compute_sequences_index()
+        if compute_windows:
+            log.info("Compute all possible windows from data...")
+            # Compute all possible windows
+            self.windows = self.compute_sequences_index()
 
-        log.info("Splitting data into positive/negative samples")
-        # Create two lists: track positive/negative samples
-        self.positive_window_index, self.negative_window_index = self.separate_pos_neg_windows()
+            log.info("Splitting data into positive/negative samples")
+            # Create two lists: track positive/negative samples
+            self.positive_window_index, self.negative_window_index = self.separate_pos_neg_windows()
 
         # Done
         log.info("Done")
@@ -82,10 +83,12 @@ class CTForamsDataset(Dataset):
             im = images[image_name]
             label = labels[image_name]
 
-            if len(im.shape) == 4 and im.shape[0] == 1:
-                im = im[0]
-            if len(label.shape) == 4 and label.shape[0] == 1:
-                label = label[0]
+            assert (
+                len(im.shape) == 3
+            ), f"Expected 3D grayscale image matrix to be 3D (W,H,D) but found {im.shape}"
+            assert (
+                len(label.shape) == 3
+            ), f"Expected 3D binary label matrix to be 3D (W,H,D) but found {label.shape}"
 
             x.append(im)
             y.append(label)

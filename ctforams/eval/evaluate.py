@@ -20,7 +20,7 @@ def infer_and_evaluate_segmentation(
     output_dir=None,
     progress=False,
 ):
-    y_hat = segmentation_inference(
+    y_hat_paths = segmentation_inference(
         dataset=dataset,
         model=model,
         device=device,
@@ -32,7 +32,7 @@ def infer_and_evaluate_segmentation(
     y = dataset.y
 
     return evaluate_segmentation(
-        y_hat,
+        y_hat_paths,
         y,
         dataset.names,
         threshold,
@@ -90,15 +90,22 @@ def iterative_matching(dist_mat: np.ndarray, max_distance: float) -> List[Tuple[
     return matched_items
 
 
-def evaluate_segmentation(y_hat, y, names, threshold, iou_threshold, min_weighted_pro, output_dir):
+def evaluate_segmentation(
+    y_hat_paths, y, names, threshold, iou_threshold, min_weighted_pro, output_dir
+):
+    print(f"Evaluation running with threshold = {threshold}")
     # For each volume
     uint_8_th = int(threshold * 255)
 
     TP, FP, FN = 0, 0, 0
 
-    for i in tqdm(range(len(y))):
+    for i in tqdm(range(len(y)), desc="Evaluating matrices..."):
+        im_name = names[i]
+        pred_path = y_hat_paths[im_name]
+        y_hat = tif.memmap(pred_path)
+
         # Threshold both
-        pred = (y_hat[i] > uint_8_th).astype(np.uint8)
+        pred = (y_hat > uint_8_th).astype(np.uint8)
         truth = (y[i][:] > 0).astype(np.uint8)
 
         # Binary [0;1] to [0;255] uint8
@@ -129,7 +136,12 @@ def evaluate_segmentation(y_hat, y, names, threshold, iou_threshold, min_weighte
         else:
             iou_matrix = np.zeros((len(true_bboxes), len(pred_bboxes)), np.float32)
 
-            for i, true_bbox in enumerate(true_bboxes):
+            for i, true_bbox in tqdm(
+                enumerate(true_bboxes),
+                desc="Comparing true bboxes...",
+                leave=False,
+                total=len(true_bboxes),
+            ):
                 true_rect = BBox(true_bbox)
                 for j, pred_bbox in enumerate(pred_bboxes):
                     pred_rect = BBox(pred_bbox)

@@ -92,7 +92,7 @@ def evaluate_segmentation(cfg: DictConfig):
         state_dict = torch.load(cfg.ckpt_path, map_location="cpu")["state_dict"]
         model.load_state_dict(state_dict)
         model.net.eval()
-        datamodule.data_test.init()
+        datamodule.data_test.init(compute_windows=False)
 
     output_dir = cfg.model_dir
 
