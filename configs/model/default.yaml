@@ -7,6 +7,7 @@ defaults:
 # compile model for faster training with pytorch 2.0
 compile: false
 scheduler_interval: step
+criterion_on_center: false
 
 criterion:
   _target_: monai.losses.GeneralizedDiceFocalLoss
