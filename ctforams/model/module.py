@@ -90,7 +90,7 @@ class CTForamsLitModule(LightningModule):
             quarter_size = crop_size // 4
             cslice = slice(center - quarter_size, center + quarter_size)
             outputs = outputs[:, :, cslice, cslice, cslice]
-            y = outputs[:, :, cslice, cslice, cslice]
+            y = y[:, :, cslice, cslice, cslice]
 
         loss = self.criterion(outputs, y)
 
