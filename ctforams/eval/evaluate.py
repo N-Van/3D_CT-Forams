@@ -1,3 +1,5 @@
+import os
+import json
 from typing import List, Tuple
 
 import cc3d
@@ -90,6 +92,38 @@ def iterative_matching(dist_mat: np.ndarray, max_distance: float) -> List[Tuple[
     return matched_items
 
 
+def add_errors(matched_idx, centroids, im_name, error_type):
+    errors = []
+    for idx in range(len(centroids)):
+        if idx not in matched_idx:
+            centroid = centroids[idx]
+            errors.append(
+                {
+                    "file": im_name,
+                    "x": int(centroid[0]),
+                    "y": int(centroid[1]),
+                    "z": int(centroid[2]),
+                    "corrected": -1,
+                    "type": error_type,
+                }
+            )
+    return errors
+
+
+def get_fp_fn(matched_items, truth_stats, pred_stats, im_name):
+    matched_true = []
+    matched_pred = []
+
+    for true_id, pred_id in matched_items:
+        matched_true.append(true_id)
+        matched_pred.append(pred_id)
+
+    data_errors = []
+    data_errors += add_errors(matched_true, truth_stats["centroids"][1:], im_name, "FN")
+    data_errors += add_errors(matched_pred, pred_stats["centroids"][1:], im_name, "FP")
+    return data_errors
+
+
 def evaluate_segmentation(
     y_hat_paths, y, names, threshold, iou_threshold, min_weighted_pro, output_dir
 ):
@@ -99,10 +133,17 @@ def evaluate_segmentation(
 
     TP, FP, FN = 0, 0, 0
 
+    data_errors = []
+
     for i in tqdm(range(len(y)), desc="Evaluating matrices..."):
         im_name = names[i]
         pred_path = y_hat_paths[im_name]
         y_hat = tif.memmap(pred_path)
+
+        print(f"Processing file {im_name}")
+        # DEBUG
+        if im_name != "Aq3T1_13":
+            continue
 
         # Threshold both
         pred = (y_hat > uint_8_th).astype(np.uint8)
@@ -126,6 +167,8 @@ def evaluate_segmentation(
 
         n_true = len(true_bboxes)
         n_pred = len(pred_bboxes)
+
+        print(f"True ccs : {n_true} vs Pred ccs : {n_pred}")
 
         tp, fn, fp = 0, 0, 0
 
@@ -162,14 +205,23 @@ def evaluate_segmentation(
                         # ie 0.1 is close while 1.0 is far
                         iou_matrix[i, j] = 1.0 - iou
 
+            # List of pairs (i,j) i=true j=pred
             matched_items = iterative_matching(iou_matrix, 1.0 - iou_threshold)
             tp = len(matched_items)
             fp = iou_matrix.shape[1] - tp
             fn = iou_matrix.shape[0] - tp
 
+            data_errors += get_fp_fn(matched_items, iou_matrix truth_stats, pred_stats, im_name)
+
         TP += tp
         FP += fp
         FN += fn
+
+        print(f"TP: {TP} ; FP: {FP} ; FN: {FN}")
+
+    errors_path = os.path.join(output_dir, "errors.json")
+    with open(errors_path, "w") as fp:
+        json.dump(data_errors, fp)
 
     metrics = {"tp": TP, "fp": FP, "fn": FN}
     return metrics
