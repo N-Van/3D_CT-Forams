@@ -211,7 +211,7 @@ def evaluate_segmentation(
             fp = iou_matrix.shape[1] - tp
             fn = iou_matrix.shape[0] - tp
 
-            data_errors += get_fp_fn(matched_items, iou_matrix truth_stats, pred_stats, im_name)
+            data_errors += get_fp_fn(matched_items, truth_stats, pred_stats, im_name)
 
         TP += tp
         FP += fp
