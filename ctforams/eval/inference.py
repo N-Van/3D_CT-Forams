@@ -10,7 +10,7 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 
 def segmentation_inference(
-    dataset, model, device, crop_size, batch_size, overlap=0.5, output_dir=None, progress=False
+    dataset, model, device, crop_size, batch_size, overlap=0.25, output_dir=None, progress=False
 ):
     # torch.backends.cudnn.benchmark = True
 
@@ -49,7 +49,8 @@ def segmentation_inference(
 
         print(f"Input shape: {x.shape}")
         output_path = os.path.join(output_dir, f"{dataset.names[i]}.tif")
-        print(f"Adding {dataset.names[i]}")
+        overlap_path = os.path.join(output_dir, f"{dataset.names[i]}_overlap.tif")
+        print(f"Running inference on {dataset.names[i]}")
         predictions_paths[dataset.names[i]] = output_path
 
         # DEBUG ??
@@ -57,23 +58,55 @@ def segmentation_inference(
             continue
 
         # Create a memmap of the same shape directly on disk to avoid using too much memory
-        y = tif.memmap(output_path, shape=x.shape, dtype=np.uint8)
+        y = tif.memmap(output_path, shape=x.shape, dtype=np.float16)
 
         # Iterate over Z
         n_over_z = int(np.ceil(x.shape[-1] / z_step))
+
+        counts = tif.memmap(overlap_path, shape=x.shape, dtype=np.float16)
+
+        for k in range(n_over_z):
+            z_start = min(k * z_step, x.shape[-1] - z_size)
+            z_end = z_start + z_size
+            sub_arr = counts[..., z_start:z_end]
+            gaussian = get_gaussian(sub_arr.shape)
+            counts[..., z_start:z_end] += gaussian
+
         for k in tqdm(range(n_over_z), desc="Iterating over Z slices", total=n_over_z, leave=False):
             z_start = min(k * z_step, x.shape[-1] - z_size)
             z_end = z_start + z_size
             sub_x = x[..., z_start:z_end]
+
             # Infer
             sub_y = infer_part(
                 sub_x, dataset, crop_size, batch_size, overlap, model, device, progress
             )
+
             # Write data to memmap
             # Compute the mean (but should be weighted by a gaussian)
-            y[..., z_start:z_end] = (y[..., z_start:z_end] // 2) + (sub_y // 2)
+            gaussian = get_gaussian(sub_y.shape)
+
+            # a*(1-w) + b*w => weighted sum with w in [0;1.0]
+            wsub_y = (sub_y * gaussian) / counts[..., z_start:z_end]
+
+            y[..., z_start:z_end] += wsub_y
+
+        y = (y * 255).astype(np.uint8)
 
     return predictions_paths
+
+
+def get_gaussian(size, dim=2, s=0.125):
+    s = s * size[dim]
+    x = np.arange(start=-(size[dim] - 1) / 2.0, stop=(size[dim] - 1) / 2.0 + 1)
+    x = np.exp(x**2 / (-2 * s**2))  # 1D gaussian
+    min_non_zero = max(np.min(x), 1e-3)
+    x = np.clip(x, a_min=min_non_zero, a_max=np.max(x))
+
+    z = np.ones(size)
+    z[:, :] = x
+
+    return z
 
 
 def infer_part(x, dataset, crop_size, batch_size, overlap, model, device, progress):
@@ -102,7 +135,7 @@ def infer_part(x, dataset, crop_size, batch_size, overlap, model, device, progre
     y = torch.nn.functional.sigmoid(y)
     y = y.detach().cpu().numpy()
     # FP32 to uint8 to limit memory usagey[i
-    y = (y * 255).astype(np.uint8)
+    # y = (y * 255).astype(np.uint8)
 
     # Remove batch dim
     y = np.squeeze(y, axis=0)

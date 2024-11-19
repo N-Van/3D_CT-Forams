@@ -92,21 +92,27 @@ def iterative_matching(dist_mat: np.ndarray, max_distance: float) -> List[Tuple[
     return matched_items
 
 
-def add_errors(matched_idx, centroids, im_name, error_type):
+def sphere_vol(radius=8):
+    return 4 / 3 * np.pi * radius**3
+
+
+def add_errors(matched_idx, centroids, im_name, error_type, voxel_count=None):
     errors = []
     for idx in range(len(centroids)):
         if idx not in matched_idx:
             centroid = centroids[idx]
-            errors.append(
-                {
-                    "file": im_name,
-                    "x": int(centroid[0]),
-                    "y": int(centroid[1]),
-                    "z": int(centroid[2]),
-                    "corrected": -1,
-                    "type": error_type,
-                }
-            )
+            data = {
+                "file": im_name,
+                "x": int(centroid[0]),
+                "y": int(centroid[1]),
+                "z": int(centroid[2]),
+                "corrected": -1,
+                "type": error_type,
+            }
+            if voxel_count is not None:
+                data["volumic_ratio"] = voxel_count[idx] / sphere_vol()
+                print(data["volumic_ratio"])
+            errors.append(data)
     return errors
 
 
@@ -120,16 +126,28 @@ def get_fp_fn(matched_items, truth_stats, pred_stats, im_name):
 
     data_errors = []
     data_errors += add_errors(matched_true, truth_stats["centroids"][1:], im_name, "FN")
-    data_errors += add_errors(matched_pred, pred_stats["centroids"][1:], im_name, "FP")
+    data_errors += add_errors(
+        matched_pred, pred_stats["centroids"][1:], im_name, "FP", pred_stats["voxel_counts"]
+    )
     return data_errors
+
+
+def filter_prediction(stats, ratio_th=0.1):
+    nstats = {"voxel_counts": [], "bounding_boxes": [], "centroids": []}
+    for i in range(len(stats["voxel_counts"])):
+        ratio = stats["voxel_counts"][i] / sphere_vol()
+        if ratio > ratio_th:
+            nstats["voxel_counts"].append(stats["voxel_counts"][i])
+            nstats["bounding_boxes"].append(stats["bounding_boxes"][i])
+            nstats["centroids"].append(stats["centroids"][i])
+    return nstats
 
 
 def evaluate_segmentation(
     y_hat_paths, y, names, threshold, iou_threshold, min_weighted_pro, output_dir
 ):
-    print(f"Evaluation running with threshold = {threshold}")
     # For each volume
-    uint_8_th = int(threshold * 255)
+    print(f"Evaluation running with threshold = {threshold}")
 
     TP, FP, FN = 0, 0, 0
 
@@ -141,12 +159,9 @@ def evaluate_segmentation(
         y_hat = tif.memmap(pred_path)
 
         print(f"Processing file {im_name}")
-        # DEBUG
-        if im_name != "Aq3T1_13":
-            continue
 
         # Threshold both
-        pred = (y_hat > uint_8_th).astype(np.uint8)
+        pred = (y_hat > threshold).astype(np.uint8)
         truth = (y[i][:] > 0).astype(np.uint8)
 
         # Binary [0;1] to [0;255] uint8
@@ -159,6 +174,9 @@ def evaluate_segmentation(
 
         # keys are: voxel_counts, bounding_boxes, centroids
         pred_stats = cc3d.statistics(pred_ccs)
+
+        pred_stats = filter_prediction(pred_stats)
+
         truth_stats = cc3d.statistics(truth_ccs)
 
         # Skip first (bg)
