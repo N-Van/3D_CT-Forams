@@ -120,15 +120,18 @@ def get_fp_fn(matched_items, truth_stats, pred_stats, im_name):
     matched_true = []
     matched_pred = []
 
-    for true_id, pred_id in matched_items:
-        matched_true.append(true_id)
-        matched_pred.append(pred_id)
+    if len(matched_items) > 0:
+        for true_id, pred_id in matched_items:
+            matched_true.append(true_id)
+            matched_pred.append(pred_id)
 
     data_errors = []
-    data_errors += add_errors(matched_true, truth_stats["centroids"][1:], im_name, "FN")
-    data_errors += add_errors(
-        matched_pred, pred_stats["centroids"][1:], im_name, "FP", pred_stats["voxel_counts"]
-    )
+    if len(truth_stats["centroids"]) > 1:
+        data_errors += add_errors(matched_true, truth_stats["centroids"][1:], im_name, "FN")
+    if len(pred_stats["centroids"]) > 1:
+        data_errors += add_errors(
+            matched_pred, pred_stats["centroids"][1:], im_name, "FP", pred_stats["voxel_counts"]
+        )
     return data_errors
 
 
@@ -155,6 +158,7 @@ def evaluate_segmentation(
 
     for i in tqdm(range(len(y)), desc="Evaluating matrices..."):
         im_name = names[i]
+
         pred_path = y_hat_paths[im_name]
         y_hat = tif.memmap(pred_path)
 
@@ -175,7 +179,7 @@ def evaluate_segmentation(
         # keys are: voxel_counts, bounding_boxes, centroids
         pred_stats = cc3d.statistics(pred_ccs)
 
-        pred_stats = filter_prediction(pred_stats)
+        pred_stats = filter_prediction(pred_stats, ratio_th=0.2)
 
         truth_stats = cc3d.statistics(truth_ccs)
 
@@ -192,8 +196,10 @@ def evaluate_segmentation(
 
         if n_true == 0:
             fp = n_pred
+            data_errors += get_fp_fn([], truth_stats, pred_stats, im_name)
         elif n_pred == 0:
             fn = n_true
+            data_errors += get_fp_fn([], truth_stats, pred_stats, im_name)
         else:
             iou_matrix = np.zeros((len(true_bboxes), len(pred_bboxes)), np.float32)
 

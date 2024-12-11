@@ -10,7 +10,15 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 
 def segmentation_inference(
-    dataset, model, device, crop_size, batch_size, overlap=0.25, output_dir=None, progress=False
+    dataset,
+    model,
+    device,
+    crop_size,
+    batch_size,
+    overlap=0.25,
+    output_dir=None,
+    progress=False,
+    crop_center=False,
 ):
     # torch.backends.cudnn.benchmark = True
 
@@ -53,6 +61,10 @@ def segmentation_inference(
         print(f"Running inference on {dataset.names[i]}")
         predictions_paths[dataset.names[i]] = output_path
 
+        tif.imwrite(
+            os.path.join(output_dir, f"{dataset.names[i]}_im.tif"), (x[:] * 255).astype(np.uint8)
+        )
+
         # DEBUG ??
         if os.path.exists(output_path):
             continue
@@ -63,9 +75,10 @@ def segmentation_inference(
         # Iterate over Z
         n_over_z = int(np.ceil(x.shape[-1] / z_step))
 
-        counts = tif.memmap(overlap_path, shape=x.shape, dtype=np.float16)
+        # counts = tif.memmap(overlap_path, shape=x.shape, dtype=np.float16)
+        counts = np.zeros(x.shape, dtype=np.float16)
 
-        for k in range(n_over_z):
+        for k in tqdm(range(n_over_z)):
             z_start = min(k * z_step, x.shape[-1] - z_size)
             z_end = z_start + z_size
             sub_arr = counts[..., z_start:z_end]

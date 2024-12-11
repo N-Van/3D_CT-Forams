@@ -90,6 +90,15 @@ class CTForamsDataset(Dataset):
                 len(label.shape) == 3
             ), f"Expected 3D binary label matrix to be 3D (W,H,D) but found {label.shape}"
 
+            if (
+                im.shape[0] < self.crop_size
+                or im.shape[1] < self.crop_size
+                or im.shape[2] < self.crop_size
+            ):
+                print(
+                    f"Must pad array since it is too small with crop size={self.crop_size}: {im.shape}"
+                )
+
             x.append(im)
             y.append(label)
             names.append(image_name)
