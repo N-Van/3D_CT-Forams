@@ -1,0 +1,12 @@
+random_noise:
+  _target_: monai.transforms.OneOf
+  transforms: null
+
+defaults:
+  - _self_
+  - /data/augmentation/transforms@random_noise.transforms:
+      - monai_histogram_shift.yaml
+      - monai_intensity_shift.yaml
+      - monai_adjust_contrast.yaml
+      - monai_gaussian_noise.yaml
+      - monai_gaussian_smooth.yaml
