@@ -1,6 +1,7 @@
 random_noise:
-  _target_: monai.transforms.OneOf
+  _target_: ctforams.data.augmentation.AugmentationWrapper
   transforms: null
+  target: oneof
 
 defaults:
   - _self_
