@@ -158,7 +158,7 @@ class CTForamsDataset(Dataset):
         x = np.expand_dims(x, axis=0)
         y = np.expand_dims(y, axis=0)
 
-        if y.dtype == np.uint8:
+        if y.dtype != np.float32:
             y = y.astype(np.float32)
             if y.max() > 1:
                 y /= 255.0
