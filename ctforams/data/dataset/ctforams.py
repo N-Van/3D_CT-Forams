@@ -164,7 +164,7 @@ class CTForamsDataset(Dataset):
                 y /= 255.0
 
         assert y.min() >= 0 and y.max() <= 1.0
-        assert y.dtype == np.float32
+        assert y.dtype == np.float32, f"Expected float32 but found : {y.dtype}"
 
         # Augment sample if train data
         if self.aug is not None:
