@@ -182,6 +182,10 @@ class CTForamsDataset(Dataset):
         return x, y, weights
 
     def __len__(self):
+        if len(self.negative_window_index) == 0:
+            return len(self.positive_window_index)
+        if len(self.positive_window_index) == 0:
+            return len(self.negative_window_index)
         if self.training:
             return min(len(self.positive_window_index), len(self.negative_window_index)) * 2
             # return min(len(self.windows), self.max_steps_per_epoch)
