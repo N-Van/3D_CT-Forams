@@ -1,6 +1,7 @@
 hydra-core==1.3.2
 hydra-colorlog==1.2.0
 hydra-optuna-sweeper==1.2.0
+numpy<2.0.0
 
 rootutils
 monai==1.3.0
