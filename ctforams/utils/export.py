@@ -1,9 +1,12 @@
 import os
 import hydra
 from hydra import initialize, compose
-import torch.onnx
+import onnx
+import torch
 from omegaconf import DictConfig, OmegaConf
 import click
+from onnxsim import simplify
+
 
 os.environ["PROJECT_ROOT"] = "../"
 
@@ -43,11 +46,12 @@ def convert(model, crop_size, xp_dir):
     # Let's create a dummy input tensor
     dummy_input = torch.randn((1, 1, crop_size, crop_size, crop_size), requires_grad=True)
 
+    export_path = os.path.join(xp_dir, "model.onnx")
     # Export the model
     torch.onnx.export(
         model,  # model being run
         dummy_input,  # model input (or a tuple for multiple inputs)
-        os.path.join(xp_dir, "model.onnx"),  # where to save the model
+        export_path,  # where to save the model
         export_params=True,  # store the trained parameter weights inside the model file
         opset_version=12,  # the ONNX version to export the model to
         # do_constant_folding=True,  # whether to execute constant folding for optimization
@@ -58,7 +62,11 @@ def convert(model, crop_size, xp_dir):
             "modelOutput": {0: "batch_size"},
         },
     )
-    print("Model has been converted to ONNX")
+
+    onnx_model = onnx.load(export_path)
+    model_simp, check = simplify(onnx_model)
+    onnx.save(model_simp, export_path)
+    print(f"Model has been converted to ONNX: path={export_path}")
 
 
 if __name__ == "__main__":
