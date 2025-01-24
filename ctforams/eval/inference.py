@@ -2,7 +2,7 @@ import os
 import torch
 from tqdm import tqdm
 from ctforams.utils import RankedLogger
-import monai
+from monai.inferers import sliding_window_inference
 import numpy as np
 import tifffile as tif
 
@@ -133,7 +133,7 @@ def infer_part(x, dataset, crop_size, batch_size, overlap, model, device, progre
 
     # Perform inference on current sequence
     with torch.no_grad():
-        y = monai.inferers.sliding_window_inference(
+        y = sliding_window_inference(
             inputs=x,
             roi_size=crop_size,  # window crop size
             sw_batch_size=batch_size,  # window batch size

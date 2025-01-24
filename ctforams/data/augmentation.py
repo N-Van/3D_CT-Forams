@@ -1,5 +1,4 @@
-import monai
-import monai.transforms
+from monai.transforms import Compose, OneOf
 
 
 class AugmentationWrapper(object):
@@ -10,9 +9,9 @@ class AugmentationWrapper(object):
 
     def get_type(self, str_val):
         if str_val == "compose":
-            return monai.transforms.Compose
+            return Compose
         elif str_val == "oneof":
-            return monai.transforms.OneOf
+            return OneOf
         else:
             raise ValueError(f"Unknown composition type {str_val}")
 

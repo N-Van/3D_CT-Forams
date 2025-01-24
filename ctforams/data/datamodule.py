@@ -2,8 +2,6 @@ from typing import Any, Dict, Optional
 from lightning import LightningDataModule
 from torch.utils.data import DataLoader
 from ctforams.utils import RankedLogger
-import monai
-import numpy as np
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
