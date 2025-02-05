@@ -1,13 +1,12 @@
-import os
 import json
+import os
 from typing import List, Tuple
 
 import cc3d
 import numpy as np
 import tifffile as tif
-from tqdm import tqdm
-
 from ctforams.eval.inference import segmentation_inference
+from tqdm import tqdm
 
 
 def infer_and_evaluate_segmentation(

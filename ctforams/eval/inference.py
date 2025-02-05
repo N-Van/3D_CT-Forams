@@ -1,10 +1,11 @@
 import os
-import torch
-from tqdm import tqdm
-from ctforams.utils import RankedLogger
-from monai.inferers import sliding_window_inference
+
 import numpy as np
 import tifffile as tif
+import torch
+from ctforams.utils import RankedLogger
+from monai.inferers import sliding_window_inference
+from tqdm import tqdm
 
 log = RankedLogger(__name__, rank_zero_only=True)
 

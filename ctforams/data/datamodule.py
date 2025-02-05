@@ -1,7 +1,8 @@
 from typing import Any, Dict, Optional
+
+from ctforams.utils import RankedLogger
 from lightning import LightningDataModule
 from torch.utils.data import DataLoader
-from ctforams.utils import RankedLogger
 
 log = RankedLogger(__name__, rank_zero_only=True)
 

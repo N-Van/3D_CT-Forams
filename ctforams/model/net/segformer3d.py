@@ -2,8 +2,9 @@
 Taken from https://github.com/OSUPCVLab/SegFormer3D/blob/main/architectures/segformer3d.py
 """
 
-import torch
 import math
+
+import torch
 from torch import nn
 
 
