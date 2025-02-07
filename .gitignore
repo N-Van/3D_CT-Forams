@@ -8,3 +8,5 @@ logs/
 *.ipynb_checkpoints*
 outputs
 __pycache__
+tmp.tif
+**/tmp.tif
