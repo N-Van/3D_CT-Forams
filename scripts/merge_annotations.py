@@ -29,9 +29,8 @@ def main(csv_path, error_json, csv_output_path):
     with open(error_json, "r") as fp:
         error_json = json.load(fp)
 
-    # slice_shape = 250
+    slice_shape = 250
     # slice_shape = 475
-    slice_shape = 0
 
     filtered_columns = ["Unnamed: 0.1", "Unnamed: 0"]
 
@@ -39,8 +38,8 @@ def main(csv_path, error_json, csv_output_path):
     for data in error_json:
         if data["corrected"] == 0:
             frame_index = get_index(data["file"])
-            # x, y, z = data["x"], data["y"], data["z"] + (slice_shape * frame_index)
-            x, y, z = data["x"], data["y"] + (slice_shape * frame_index), data["z"]
+            x, y, z = data["x"], data["y"], data["z"] + (slice_shape * frame_index)
+            # x, y, z = data["x"], data["y"] + (slice_shape * frame_index), data["z"]
             new_data = pd.DataFrame({"Xcoords": [x], "Ycoords": [y], "Zcoords": [z]})
             csv_data = pd.concat([csv_data, new_data], ignore_index=True)
 
