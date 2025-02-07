@@ -67,8 +67,8 @@ def split_data(x, y, kfold, fold_index, dim=1):
     return x_trains, y_trains, x_val, y_val
 
 
-def generate_split(x, y, kfold, fold_index, output_folder, basename, h5_path, dim=1):
-    x_train, y_train, x_val, y_val = split_data(x, y, kfold, fold_index, dim=1)
+def generate_split(x, y, kfold, fold_index, output_folder, basename, h5_path, dim):
+    x_train, y_train, x_val, y_val = split_data(x, y, kfold, fold_index, dim=dim)
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder, exist_ok=True)
@@ -98,19 +98,14 @@ def generate_split(x, y, kfold, fold_index, output_folder, basename, h5_path, di
 
 
 def add_dataset(im_grp, label_grp, x, y, basename, step_size=250):
-    if x.shape[-1] > step_size:
-        n_split = int(np.ceil(x.shape[-1] / step_size))
-        for i in tqdm(range(n_split)):
-            start = i * step_size
-            end = min(start + step_size, x.shape[-1])
-            s = slice(start, end)
+    n_split = max(1, int(np.ceil(x.shape[-1] / step_size)))
+    for i in tqdm(range(n_split)):
+        start = i * step_size
+        end = min(start + step_size, x.shape[-1])
+        s = slice(start, end)
 
-            im_grp.create_dataset(
-                f"{basename}_{i}", data=x[..., s], compression="gzip", chunks=True
-            )
-            label_grp.create_dataset(
-                f"{basename}_{i}", data=y[..., s], compression="gzip", chunks=True
-            )
+        im_grp.create_dataset(f"{basename}_{i}", data=x[..., s], compression="gzip", chunks=True)
+        label_grp.create_dataset(f"{basename}_{i}", data=y[..., s], compression="gzip", chunks=True)
 
 
 @click.command()
@@ -141,7 +136,13 @@ def add_dataset(im_grp, label_grp, x, y, basename, step_size=250):
     default=-1,
     help="Index of the cross validation split to generation. Default is -1 which means all splits will be generated. kindex is -1 or between [0;kfold-1]",
 )
-def main(im_path, csv_path, output_folder, kfold, kindex):
+@click.option(
+    "--dim",
+    required=False,
+    default=1,
+    help="Axis number to use for the split. Example if dim=1 and order is X,Y,Z then we split following the Y axis.",
+)
+def main(im_path, csv_path, output_folder, kfold, kindex, dim):
     # Load data
     x, y = load(im_path, csv_path)
     # Format groundtruth
@@ -152,10 +153,10 @@ def main(im_path, csv_path, output_folder, kfold, kindex):
     if kindex == -1:
         for i in range(kfold):
             h5_path = os.path.join(output_folder, f"{basename}_{i}.h5")
-            generate_split(x, y, kfold, i, output_folder, basename, h5_path, dim=1)
+            generate_split(x, y, kfold, i, output_folder, basename, h5_path, dim=dim)
     else:
         h5_path = os.path.join(output_folder, f"{basename}_{kindex}.h5")
-        generate_split(x, y, kfold, kindex, output_folder, basename, h5_path, dim=1)
+        generate_split(x, y, kfold, kindex, output_folder, basename, h5_path, dim=dim)
 
 
 if __name__ == "__main__":

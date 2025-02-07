@@ -1,5 +1,6 @@
 from pathlib import Path
-print('Running' if __name__ == '__main__' else 'Importing', Path(__file__).resolve())
+
+print("Running" if __name__ == "__main__" else "Importing", Path(__file__).resolve())
 
 import pandas as pd
 import tifffile as tif
@@ -13,6 +14,7 @@ def load(im_path, csv_path):
     # From Z, Y, X to X, Y, Z
     x = np.swapaxes(x, 0, -1)
     return x, y
+
 
 def s2i(value):
     if isinstance(value, str):
@@ -44,7 +46,9 @@ def get_sphere_template(radius):
     sphere_array[mat_distance <= radius**2] = 1
     return sphere_array
 
+
 def format_groundtruth(x, data):
+    # TODO use temp dir to store the tmp tif file
     y = tif.memmap("tmp.tif", shape=x.shape, dtype="uint8")
 
     sphere_template = get_sphere_template(radius=8)
@@ -61,6 +65,7 @@ def format_groundtruth(x, data):
         y = draw_sphere_at(y, sphere_template, center)
 
     return x, y
+
 
 def draw_sphere_at(mat, sphere_template, center):
     center_x, center_y, center_z = center
@@ -82,7 +87,8 @@ def draw_sphere_at(mat, sphere_template, center):
             patch_start_z:patch_end_z,
         ],
     )
-    return mat    
+    return mat
+
 
 def get_slice(pos, array_dim, patch_dim):
     half_patch_size = patch_dim // 2

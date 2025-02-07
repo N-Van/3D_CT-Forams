@@ -15,6 +15,7 @@ logger.setLevel(logging.INFO)
 class KEYBINDS(object):
     PREV_SAMPLE = "l"
     NEXT_SAMPLE = "m"
+    NEXT_SAMPLE_ALT = "n"
     REAL_ERROR = "e"
     FALSE_ERROR = "v"
     NEXT_N_SAMPLE = "j"
@@ -170,6 +171,7 @@ class Annotator3D(object):
             self.prev_sample()
 
         @self.viewer.bind_key(KEYBINDS.NEXT_SAMPLE)
+        @self.viewer.bind_key(KEYBINDS.NEXT_SAMPLE_ALT)
         def skip_sample(viewer):
             self.next_sample()
 
