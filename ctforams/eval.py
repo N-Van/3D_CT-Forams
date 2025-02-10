@@ -11,6 +11,7 @@ from lightning.pytorch.loggers import Logger
 from lightning.pytorch.loggers.mlflow import MLFlowLogger
 from omegaconf import DictConfig, OmegaConf
 from rich.pretty import pprint
+from pathlib import Path
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 # ------------------------------------------------------------------------------------ #
@@ -134,7 +135,9 @@ def evaluate(cfg) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     print("Final results:")
     pprint(stats)
 
-    output_csv = os.path.join(output_dir, "scores.csv")
+    hdf5_name = Path(cfg["data"]["test_data"]["hdf5_path"]).stem
+
+    output_csv = os.path.join(output_dir, f"{hdf5_name}_scores.csv")
     print(f"Scores are written to: {output_csv}")
     with open(output_csv, "w") as file:
         json.dump(stats, file, cls=NumpyFloatValuesEncoder)
