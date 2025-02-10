@@ -110,7 +110,6 @@ def add_errors(matched_idx, centroids, im_name, error_type, voxel_count=None):
             }
             if voxel_count is not None:
                 data["volumic_ratio"] = voxel_count[idx] / sphere_vol()
-                print(data["volumic_ratio"])
             errors.append(data)
     return errors
 
@@ -242,7 +241,7 @@ def evaluate_segmentation(
 
         print(f"TP: {TP} ; FP: {FP} ; FN: {FN}")
 
-    errors_path = os.path.join(output_dir, "errors.json")
+    errors_path = os.path.join(output_dir, f"{names[0]}_errors.json")
     with open(errors_path, "w") as fp:
         json.dump(data_errors, fp)
 
