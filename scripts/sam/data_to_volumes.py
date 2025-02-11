@@ -63,13 +63,19 @@ def format_groundtruth(x, data, output_dir):
 
         # Get crop
         crop_dir = os.path.join(output_dir, f"crop_{i}_x_{center_x}_y_{center_y}_z_{center_z}")
-        os.makedirs(crop_dir, exist_ok=True)
 
         crop = x[
             center_x - half : center_x + half,
             center_y - half : center_y + half,
             center_z - half : center_z + half,
         ]
+
+        if crop.shape != (crop_size, crop_size, crop_size):
+            print(crop.shape)
+            print(f"Skipping crop {crop_dir}")
+            continue
+
+        os.makedirs(crop_dir, exist_ok=True)
 
         # X,Y,Z = 0, 1, 2
         # Y,Z,X = 1, 2, 0

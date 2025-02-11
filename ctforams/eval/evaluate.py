@@ -114,7 +114,7 @@ def add_errors(matched_idx, centroids, im_name, error_type, voxel_count=None):
     return errors
 
 
-def get_fp_fn(matched_items, truth_stats, pred_stats, im_name):
+def get_fp_fn(matched_items, true_centroids, pred_centroids, im_name):
     matched_true = []
     matched_pred = []
 
@@ -124,12 +124,10 @@ def get_fp_fn(matched_items, truth_stats, pred_stats, im_name):
             matched_pred.append(pred_id)
 
     data_errors = []
-    if len(truth_stats["centroids"]) > 1:
-        data_errors += add_errors(matched_true, truth_stats["centroids"][1:], im_name, "FN")
-    if len(pred_stats["centroids"]) > 1:
-        data_errors += add_errors(
-            matched_pred, pred_stats["centroids"][1:], im_name, "FP", pred_stats["voxel_counts"]
-        )
+    if len(true_centroids) > 0:
+        data_errors += add_errors(matched_true, true_centroids, im_name, "FN")
+    if len(pred_centroids) > 0:
+        data_errors += add_errors(matched_pred, pred_centroids, im_name, "FP", voxel_count=None)
     return data_errors
 
 
@@ -144,6 +142,12 @@ def filter_prediction(stats, ratio_th=0.1):
     return nstats
 
 
+def distance_between(x1, x2, y1, y2, z1, z2):
+    import math
+
+    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2)
+
+
 def evaluate_segmentation(
     y_hat_paths, y, names, threshold, iou_threshold, min_weighted_pro, output_dir
 ):
@@ -154,8 +158,8 @@ def evaluate_segmentation(
 
     data_errors = []
 
-    for i in tqdm(range(len(y)), desc="Evaluating matrices..."):
-        im_name = names[i]
+    for k in tqdm(range(len(y)), desc="Evaluating matrices..."):
+        im_name = names[k]
 
         pred_path = y_hat_paths[im_name]
         y_hat = tif.memmap(pred_path)
@@ -164,7 +168,7 @@ def evaluate_segmentation(
 
         # Threshold both
         pred = (y_hat > threshold).astype(np.uint8)
-        truth = (y[i][:] > 0).astype(np.uint8)
+        truth = (y[k][:] > 0).astype(np.uint8)
 
         # Binary [0;1] to [0;255] uint8
         pred *= 255
@@ -184,6 +188,8 @@ def evaluate_segmentation(
         # Skip first (bg)
         true_bboxes = truth_stats["bounding_boxes"][1:]
         pred_bboxes = pred_stats["bounding_boxes"][1:]
+        true_centroids = truth_stats["centroids"][1:]
+        pred_centroids = pred_stats["centroids"][1:]
 
         n_true = len(true_bboxes)
         n_pred = len(pred_bboxes)
@@ -194,12 +200,13 @@ def evaluate_segmentation(
 
         if n_true == 0:
             fp = n_pred
-            data_errors += get_fp_fn([], truth_stats, pred_stats, im_name)
+            data_errors += get_fp_fn([], true_centroids, pred_centroids, im_name)
         elif n_pred == 0:
             fn = n_true
-            data_errors += get_fp_fn([], truth_stats, pred_stats, im_name)
+            data_errors += get_fp_fn([], true_centroids, pred_centroids, im_name)
         else:
-            iou_matrix = np.zeros((len(true_bboxes), len(pred_bboxes)), np.float32)
+            # i = truth, j = pred
+            iou_matrix = np.ones((len(true_bboxes), len(pred_bboxes)), np.float32)
 
             for i, true_bbox in tqdm(
                 enumerate(true_bboxes),
@@ -208,11 +215,11 @@ def evaluate_segmentation(
                 total=len(true_bboxes),
             ):
                 true_rect = BBox(true_bbox)
+
                 for j, pred_bbox in enumerate(pred_bboxes):
                     pred_rect = BBox(pred_bbox)
 
                     if true_rect.intersects(pred_rect):
-
                         # Merge both rectangle to get area of interest for iou optimization
                         roi = BBox.merge_as_slices(true_rect, pred_rect)
 
@@ -222,6 +229,7 @@ def evaluate_segmentation(
 
                         # Compute iou
                         iou = compute_iou(pred_roi, truth_roi)
+
                         # We use inverse iou since the matching algorithm
                         # match items that are the closest
                         # ie 0.1 is close while 1.0 is far
@@ -233,7 +241,7 @@ def evaluate_segmentation(
             fp = iou_matrix.shape[1] - tp
             fn = iou_matrix.shape[0] - tp
 
-            data_errors += get_fp_fn(matched_items, truth_stats, pred_stats, im_name)
+            data_errors += get_fp_fn(matched_items, true_centroids, pred_centroids, im_name)
 
         TP += tp
         FP += fp
