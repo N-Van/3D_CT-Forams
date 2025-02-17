@@ -12,7 +12,15 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 
 class CTForamsDataset(Dataset):
-    def __init__(self, hdf5_path, group_name, crop_size, max_steps_per_epoch, training=False):
+    def __init__(
+        self,
+        hdf5_path,
+        group_name,
+        crop_size,
+        max_steps_per_epoch,
+        training=False,
+        window_overlap=0.5,
+    ):
         super().__init__()
         self.hdf5_path = hdf5_path
         self.group_name = group_name
@@ -20,6 +28,7 @@ class CTForamsDataset(Dataset):
         self.training = training
         self.aug = None
         self.max_steps_per_epoch = max_steps_per_epoch
+        self.window_overlap = window_overlap
 
     def init(self, compute_windows=True):
         log.info("Loading data pairs...")
@@ -114,7 +123,9 @@ class CTForamsDataset(Dataset):
 
     def add_crop_windows(self, x, index):
         windows = []
-        windows_indices = self.compute_window_indices(x.shape, size=self.crop_size, overlap=0)
+        windows_indices = self.compute_window_indices(
+            x.shape, size=self.crop_size, overlap=self.window_overlap
+        )
         for slices in windows_indices:
             windows.append(
                 {
