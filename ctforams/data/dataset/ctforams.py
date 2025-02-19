@@ -20,6 +20,8 @@ class CTForamsDataset(Dataset):
         max_steps_per_epoch,
         training=False,
         window_overlap=0.5,
+        discard_volume_ratio_th=0.5,
+        sphere_radius=8,
     ):
         super().__init__()
         self.hdf5_path = hdf5_path
@@ -29,6 +31,8 @@ class CTForamsDataset(Dataset):
         self.aug = None
         self.max_steps_per_epoch = max_steps_per_epoch
         self.window_overlap = window_overlap
+        self.theorical_volume = 4 / 3 * np.pi * sphere_radius**3
+        self.discard_volume_ratio_th = discard_volume_ratio_th
 
     def init(self, compute_windows=True):
         log.info("Loading data pairs...")
@@ -64,13 +68,28 @@ class CTForamsDataset(Dataset):
         positive_indexes = []
         negative_indexes = []
 
+        discarded_count = 0
         for i, window in tqdm(enumerate(self.windows)):
             x_i, window_slice = window.values()
             y = self.y[x_i][window_slice]
             if np.any(y):
-                positive_indexes.append(i)
+                annotation_volume = np.count_nonzero(y)
+                # We compute how much of the sphere volume is present in the crop
+                # If we don't have enough, this is not a good sample since it will be on the border so we discard it
+                # If there is more than one annotation this doesn't work but usually there is only one object in a
+                # single window
+                if float(annotation_volume / self.theorical_volume) >= self.discard_volume_ratio_th:
+                    positive_indexes.append(i)
+                else:
+                    discarded_count += 1
             else:
                 negative_indexes.append(i)
+        log.info(
+            f"Discarded #{discarded_count} positive windows that were having unsufficient annotation volume"
+        )
+        log.info(
+            f"Found #{len(positive_indexes)} positive windows and #{len(negative_indexes)} negative windows"
+        )
         return positive_indexes, negative_indexes
 
     def load_hdf5(self):
@@ -146,6 +165,7 @@ class CTForamsDataset(Dataset):
             # If no positive sample or one out of 2 sample
             if len(set_) == 0 or (i % 2 == 1 and len(self.negative_window_index) > 0):
                 set_ = self.negative_window_index
+
             i = np.random.choice(set_)
 
         # Get the image index and window slice

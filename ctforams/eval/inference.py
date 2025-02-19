@@ -79,6 +79,7 @@ def segmentation_inference(
         # counts = tif.memmap(overlap_path, shape=x.shape, dtype=np.float16)
         counts = np.zeros(x.shape, dtype=np.float16)
 
+        # Compute all gaussian weights
         for k in tqdm(range(n_over_z)):
             z_start = min(k * z_step, x.shape[-1] - z_size)
             z_end = z_start + z_size

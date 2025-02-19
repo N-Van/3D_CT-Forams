@@ -8,4 +8,5 @@ affine:
     - ${crop_size}
     - ${crop_size} # always same crop size
   rotate_range: [3.14, 3.14, 3.14] # Full range rotation
-  scale_range: [0.1, 0.1, 0.1] # Scale between [0.9;1.1]
+  # scale_range: [0.1, 0.1, 0.1] # Scale between [0.9;1.1]
+  scale_range: [0., 0., 0.] # Scale between [0.9;1.1]
