@@ -1,4 +1,5 @@
 _target_: segmentation_models_pytorch_3d.Unet
 encoder_name: efficientnet-b0
+encoder_weights: null
 in_channels: 1
 classes: 1
