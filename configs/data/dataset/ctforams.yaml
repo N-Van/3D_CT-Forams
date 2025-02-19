@@ -4,3 +4,4 @@ hdf5_path: null
 group_name: null
 crop_size: ${crop_size}
 max_steps_per_epoch: ${max_steps_per_epoch}
+window_overlap: 0.0

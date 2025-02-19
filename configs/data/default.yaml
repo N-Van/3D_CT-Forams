@@ -10,12 +10,12 @@ batch_size: 1
 num_workers: 0
 pin_memory: false
 crop_size: ${crop_size}
-window_overlap: 0.5
 
 train_data:
   hdf5_path: ${paths.data_dir}/${hdf5_name}
   group_name: train
   training: true
+  window_overlap: ${window_overlap}
 val_data:
   hdf5_path: ${paths.data_dir}/${hdf5_name}
   group_name: val
