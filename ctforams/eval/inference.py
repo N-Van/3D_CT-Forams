@@ -16,7 +16,7 @@ def segmentation_inference(
     device,
     crop_size,
     batch_size,
-    overlap=0.25,
+    overlap=0.50,
     output_dir=None,
     progress=False,
     crop_center=False,
