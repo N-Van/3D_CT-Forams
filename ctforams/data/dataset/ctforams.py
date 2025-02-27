@@ -20,7 +20,7 @@ class CTForamsDataset(Dataset):
         max_steps_per_epoch,
         training=False,
         window_overlap=0.5,
-        discard_volume_ratio_th=0.5,
+        discard_volume_ratio_th=0.0,
         sphere_radius=8,
     ):
         super().__init__()

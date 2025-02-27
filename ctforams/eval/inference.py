@@ -106,7 +106,8 @@ def segmentation_inference(
 
             y[..., z_start:z_end] += wsub_y
 
-        y = (y * 255).astype(np.uint8)
+        # Does not work with memmap
+        # y = (y * 255).astype(np.uint8)
 
     return predictions_paths
 
