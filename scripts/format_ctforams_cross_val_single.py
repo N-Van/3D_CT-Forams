@@ -73,10 +73,10 @@ def generate_split(x, y, kfold, fold_index, output_folder, basename, h5_path, di
     if not os.path.exists(output_folder):
         os.makedirs(output_folder, exist_ok=True)
 
-    with h5py.File(h5_path, "w") as hf:
-        train_grp = hf.create_group("train")
-        train_im_grp = train_grp.create_group("im")
-        train_label_grp = train_grp.create_group("label")
+    with h5py.File(h5_path, "a") as hf:
+        train_grp = hf.require_group("train")
+        train_im_grp = train_grp.require_group("im")
+        train_label_grp = train_grp.require_group("label")
         print("Writing training data...")
         if not isinstance(x_train, list):
             add_dataset(train_im_grp, train_label_grp, x_train, y_train, f"{basename}")
@@ -86,9 +86,9 @@ def generate_split(x, y, kfold, fold_index, output_folder, basename, h5_path, di
                     train_im_grp, train_label_grp, x_train[i], y_train[i], f"{basename}_{i}"
                 )
 
-        val_grp = hf.create_group("val")
-        val_im_grp = val_grp.create_group("im")
-        val_label_grp = val_grp.create_group("label")
+        val_grp = hf.require_group("val")
+        val_im_grp = val_grp.require_group("im")
+        val_label_grp = val_grp.require_group("label")
         print("Writing validation data...")
         val_im_grp.create_dataset(basename, data=x_val, compression="gzip", chunks=True)
         val_label_grp.create_dataset(basename, data=y_val, compression="gzip", chunks=True)
@@ -150,12 +150,17 @@ def main(im_path, csv_path, output_folder, kfold, kindex, dim):
 
     basename = Path(im_path).stem
 
+    basename_with_index = basename if kindex == -1 else f"{basename}_{kindex}"
+    h5_path = os.path.join(output_folder, f"{basename_with_index}.h5")
+
+    if os.path.exists(h5_path):
+        print(f"Skipping file {h5_path} because it already exists")
+        return
+
     if kindex == -1:
         for i in range(kfold):
-            h5_path = os.path.join(output_folder, f"{basename}_{i}.h5")
             generate_split(x, y, kfold, i, output_folder, basename, h5_path, dim=dim)
     else:
-        h5_path = os.path.join(output_folder, f"{basename}_{kindex}.h5")
         generate_split(x, y, kfold, kindex, output_folder, basename, h5_path, dim=dim)
 
 
