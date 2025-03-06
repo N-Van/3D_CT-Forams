@@ -21,4 +21,6 @@
 
 `pip install -r requirements.txt`
 
+# Jean-Zay installation
+
 ## Image prediction

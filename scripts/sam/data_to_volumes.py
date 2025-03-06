@@ -1,12 +1,10 @@
 import numpy as np
 import pandas as pd
 import tifffile as tif
-from scipy import ndimage as ndi
 from tqdm import tqdm
 import os
-from pathlib import Path
 import click
-import cv2
+from adaptsam import AdaptSAMPredictor
 
 
 def load(im_path, csv_path):
@@ -35,22 +33,15 @@ def point_in_array(pt, array):
     return True
 
 
-def get_slice(pos, array_dim, patch_dim):
-    half_patch_size = patch_dim // 2
-    array_start = max(0, pos - half_patch_size)
-    patch_start = half_patch_size - (pos - array_start)
-    array_end = min(array_dim - 1, pos + half_patch_size)
-    patch_end = array_end - pos + half_patch_size
-
-    assert array_start <= array_end, print(f"start: {array_start}, end: {array_end}")
-    assert patch_start <= patch_end, print(f"start: {patch_start}, end: {patch_end}")
-
-    return array_start, array_end, patch_start, patch_end
-
-
-def format_groundtruth(x, data, output_dir):
-    crop_size = 64
+def generate_volumes(x, data, predictor, output_dir, crop_size):
     half = crop_size // 2
+
+    im_folder = os.path.join(output_dir, "images")
+    mask_folder = os.path.join(output_dir, "masks")
+
+    os.makedirs(im_folder, exist_ok=True)
+    os.makedirs(mask_folder, exist_ok=True)
+
     for i, center in tqdm(data.iterrows()):
         center_x, center_y, center_z = (
             s2i(center["Xcoords"]),
@@ -61,9 +52,6 @@ def format_groundtruth(x, data, output_dir):
         if not point_in_array(center, x):
             continue
 
-        # Get crop
-        crop_dir = os.path.join(output_dir, f"crop_{i}_x_{center_x}_y_{center_y}_z_{center_z}")
-
         crop = x[
             center_x - half : center_x + half,
             center_y - half : center_y + half,
@@ -72,37 +60,16 @@ def format_groundtruth(x, data, output_dir):
 
         if crop.shape != (crop_size, crop_size, crop_size):
             print(crop.shape)
-            print(f"Skipping crop {crop_dir}")
+            print(f"Skipping crop")
             continue
 
-        os.makedirs(crop_dir, exist_ok=True)
+        point_prompt = [half, half, half]
 
-        # X,Y,Z = 0, 1, 2
-        # Y,Z,X = 1, 2, 0
-        # X,Z,Y = 0, 2, 1
-        rot_axes = [(0, 1, 2), (1, 2, 0), (0, 2, 1)]
-
-        for k in range(3):
-            crop_dir_plane = os.path.join(crop_dir, f"plane_{k}")
-            crop_dir_right = os.path.join(crop_dir_plane, "right")
-            crop_dir_left = os.path.join(crop_dir_plane, "left")
-            os.makedirs(crop_dir_plane, exist_ok=True)
-            os.makedirs(crop_dir_left, exist_ok=True)
-            os.makedirs(crop_dir_right, exist_ok=True)
-            current_crop = np.moveaxis(crop, (0, 1, 2), rot_axes[k])
-            for k in range(half):
-                left = current_crop[
-                    :,
-                    :,
-                    half - k,
-                ]
-                cv2.imwrite(os.path.join(crop_dir_left, f"{k}.jpg"), left)
-                right = current_crop[
-                    :,
-                    :,
-                    half + k,
-                ]
-                cv2.imwrite(os.path.join(crop_dir_right, f"{k}.jpg"), right)
+        # Generate the prediction
+        prediction = predictor.predict(crop, point_prompt)
+        name = f"crop_{i}_x_{center_x}_y_{center_y}_z_{center_z}.tif"
+        tif.imwrite(os.path.join(im_folder, name), crop)
+        tif.imwrite(os.path.join(mask_folder, name), prediction)
 
 
 @click.command()
@@ -117,13 +84,36 @@ def format_groundtruth(x, data, output_dir):
     help="Path to the annotation file in .csv",
 )
 @click.option(
+    "--model_cfg",
+    required=True,
+    help="Path to the SAM2 model config",
+)
+@click.option(
+    "--sam2_checkpoint",
+    required=True,
+    help="Path to the SAM2 checkpoint",
+)
+@click.option(
     "--output_folder",
     required=True,
     help="Path to the output folder",
 )
-def main(im_path, csv_path, output_folder):
+@click.option(
+    "--crop_size",
+    required=True,
+    default=64,
+    help="Crop size around the center",
+)
+def main(im_path, csv_path, model_cfg, sam2_checkpoint, output_folder, crop_size):
+    predictor = AdaptSAMPredictor(
+        model_cfg=model_cfg,
+        sam2_checkpoint=sam2_checkpoint,
+    )
+
+    os.makedirs(output_folder, exist_ok=True)
+
     x, y = load(im_path, csv_path)
-    format_groundtruth(x, y, output_folder)
+    generate_volumes(x, y, predictor, output_folder, crop_size)
 
 
 if __name__ == "__main__":

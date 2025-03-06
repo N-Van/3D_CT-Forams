@@ -1,9 +1,12 @@
-from tqdm import tqdm
 import os
+import sys
+
 import click
 import cv2
+from tqdm import tqdm
 
-from ..common.utils import load, point_in_array, s2i
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from common.utils import load, point_in_array, s2i
 
 
 def to_patches(x, data, output_dir, crop_size, axis):
@@ -56,8 +59,13 @@ def to_patches(x, data, output_dir, crop_size, axis):
     required=True,
     help="Path to the output folder",
 )
-@click.option("--crop_size", required=True, type=int)
-@click.option("--axis", required=True, type=str)
+@click.option("--crop_size", required=True, type=int, help="Crop size of the 2D image crop")
+@click.option(
+    "--axis",
+    required=True,
+    type=click.Choice(["x", "y", "z"], case_sensitive=True),
+    help="Select the dimension you want to slice",
+)
 def main(im_path, csv_path, output_folder, crop_size, axis):
     x, y = load(im_path, csv_path)
     to_patches(x, y, output_folder, crop_size, axis)

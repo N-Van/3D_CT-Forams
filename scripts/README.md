@@ -11,25 +11,99 @@
 
 ## SAM - Estimating 3D shape
 
-1. `sam/data_to_xany_patches.py`
-   First we generate 2D crops around ROIs to be able to annotate using xany-labelling
+### Annotations for finetuning
 
-2. `sam/xany_crop_to_sam_data.py`
-   Then we extract annotated patches (some can be missing) from the patches folder and build
-   pairs of im/label 2D crops to train sam on it
+1. First we generate 2D crops around ROIs to be able to annotate using xany-labelling
 
-3. `sam/data_to_volumes.py`
-   Use this script to generate all possible sequence of 2D images for the 3 different planes.
-   It will be used by the sam tracking inference script to obtain 3D shapes estimations
+```sh
+python sam/data_to_xany_patches.py --help
 
-4. `TBD`
-   Uses the image sequences generated in 3. to perform the tracking and provide 3D shapes estimations.
+Usage: data_to_xany_patches.py [OPTIONS]
 
-5. `sam/napari_filter_volumes.py`
+Options:
+  --im_path TEXT        Path to the image to format  [required]
+  --csv_path TEXT       Path to the annotation file in .csv  [required]
+  --output_folder TEXT  Path to the output folder  [required]
+  --crop_size INTEGER   Crop size of the 2D image crop  [required]
+  --axis [x|y|z]        Select the dimension you want to slice  [required]
+  --help                Show this message and exit.
+```
+
+Example:
+
+```sh
+python sam/data_to_xany_patches.py \
+--im_path data/crops/im/Aq1T0.tif \
+--csv_path data/crops/csv/Aq1T0.csv \
+--output_folder data/sam/crops \
+--crop_size 64 \
+--axis x
+```
+
+2. Annotate images (using x-anylabelling or others)
+
+Here is the export configuration file used by x-anylabelling to obtain the segmentation masks:
+
+```
+{
+    "type": "grayscale",
+    "colors": {
+        "forams": 255
+    }
+}
+```
+
+3. We format the data folder to fit the davis format taken by sam to perform finetuning directly with the original code.
+
+Input folder structure should look like this:
+
+```
+in_folder/
+   masks/
+      0.png
+      1.png
+      ...
+   0.jpg
+   1.jpg
+   ...
+```
+
+```sh
+python sam/annotations_to_davis_format.py --help
+Usage: annotations_to_davis_format.py [OPTIONS]
+  DAVIS output format
+  /DAVIS
+      /JPEGImages
+         /<img or video name>
+            /00001.jpg <- color image [0; 255]^3 any size
+            /00002.jpg
+            /...
+      /Annotations
+         /<img or video name>
+            /00001.png <- binary mask [0; 255] same as img
+            /00002.png
+
+Options:
+  --in_folder TEXT      The folder containing the annotations.  [required]
+  --output_folder TEXT  The folder to output the DAVIS format.  [required]
+  --help                Show this message and exit.
+```
+
+4. Configure SAM2 training config to use the dataset to finetune
+
+### From 2d point to 3D shape
+
+0. Install [AdaptSAM-3D](https://github.com/KarpRom/adaptSAM-3D/tree/main)
+
+1. `sam/data_to_volumes.py`
+   Use this script to generate all 3D segmentations from sam2D with a tif image and csv file containing points location
+
+2. `sam/napari_filter_volumes.py`
    This script is a small napari helper script to select or discard 3D shapes estimations to create a curated dataset of 3D shapes. We select the best ones that we will use to train on.
 
-6. `sam/volumes_to_hdf5.py`
+3. `sam/volumes_to_hdf5.py`
    Format the curated volumes and put them into an HDF5 file to be used for training.
+   This hdf5 can be used to train a neural network (same as for foraminifera detection).
 
-7. `sam/volumes_inference.py`
+4. `sam/volumes_inference.py`
    Can process a data (tiff img + csv) to produce a 3D shape inference centered around each annotated center.
