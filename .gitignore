@@ -10,3 +10,4 @@ outputs
 __pycache__
 tmp.tif
 **/tmp.tif
+scripts/cache

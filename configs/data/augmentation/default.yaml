@@ -5,7 +5,7 @@ defaults:
       - monai_flip.yaml
       - monai_affine.yaml
       # - monai_elastic.yaml
-      - monai_random_noise.yaml
+      # - monai_random_noise.yaml
       # - monai_random_noise.yaml
       # - monai_gaussian_noise.yaml
       # - monai_gaussian_smooth.yaml

@@ -98,6 +98,16 @@ Options:
 1. `sam/data_to_volumes.py`
    Use this script to generate all 3D segmentations from sam2D with a tif image and csv file containing points location
 
+```sh
+python sam/data_to_volumes.py \
+--im_path ../data/crops/im/Aq1T0_270z_770z.tif \
+--csv_path ../data/crops/csv/v1/Aq1T0_270z_770z.csv \
+--model_cfg configs/sam2.1/sam2.1_hiera_b+.yaml \
+--sam2_checkpoint ../data/sam/models/checkpoint.pt \
+--output_folder ../data/sam/vol_output \
+--crop_size 64
+```
+
 2. `sam/napari_filter_volumes.py`
    This script is a small napari helper script to select or discard 3D shapes estimations to create a curated dataset of 3D shapes. We select the best ones that we will use to train on.
 

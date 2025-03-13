@@ -2,7 +2,7 @@ affine:
   _target_: monai.transforms.RandAffined
   keys: ["image", "label"]
   prob: 0.5
-  mode: ["bilinear", "bilinear"]
+  mode: ["bilinear", "nearest"]
   spatial_size:
     - ${crop_size}
     - ${crop_size}
