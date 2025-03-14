@@ -21,6 +21,28 @@
 
 `pip install -r requirements.txt`
 
+## Train a model
+
+```sh
+HYDRA_FULL_ERROR=1 python3 ctforams/train.py\
+    task_name="aq1"\ # Task name
+    data.batch_size=32\ # Batch size
+    hdf5_name=Aq1Aq3.h5\ # HDF5 file containing the training data (<code base>/data/<hdf5_name>)
+    data.num_workers=19\ # Number of parallel workers (number optimized for JZ)
+```
+
+## Evaluate a model
+
+```sh
+HYDRA_FULL_ERROR=1 python3 ctforams/eval.py\
+    model_dir=${model_dir}\ # The path to the model dir
+    +data.batch_size=16\ # Batch size
+    progress=True\ # Show progress during inference
+    +hdf5_name=${hdf5_name}\ # The hdf5 path
+    +data.test_data.group_name=test\ # You can override the key used for the test (train/val/test)
+    threshold=0.8\ # Prob map threshold
+```
+
 # Jean-Zay installation
 
 This section describes how to run an experiment on Jean-Zay HPC
