@@ -52,7 +52,37 @@ This section describes how to run an experiment on Jean-Zay HPC
 - http://www.idris.fr/eng/jean-zay/gpu/jean-zay-gpu-python-env-eng.html
 - http://www.idris.fr/eng/jean-zay/cpu/jean-zay-cpu-calculateurs-disques-eng.html
 
-## Slurm configuration file
+## Installation steps
+
+1. Follow previous section to create a personnal python env
+2. Clone the repository into `$WORK`: `cd $WORK` then `git clone https://github.com/N-Van/3D_CT-Forams`
+3. Install conda env:
+
+   1. conda create -n ctforams python=3.10
+   2. conda activate ctforams
+   3. cd $WORK/3D_CT-Forams
+   4. pip install -r requirements.txt
+   5. Créer un lien symbolique $ALL_CCFRWORK/data -> $WORK/data
+
+4. Test de l'installation via une réservation intéractive:
+   Récupérer le script run_segmentation.sh et le rendre exécutable chmod +x run_segmentation.sh
+   srun --pty --nodes=1 --ntasks-per-node=1 --cpus-per-task=10 --gres=gpu:1 -A cpp@v100 --time=01:00:00 --qos=qos_gpu-dev bash
+
+5. From the node:
+   1. Activate conda env `conda activate ctforams`
+   2. Run the following script (later called `run_segmentation.sh`)
+
+```sh
+# Move to the source code
+cd $WORK/3D_CT-Forams
+HYDRA_FULL_ERROR=1 python3 ctforams/train.py\
+    task_name="test_run"\ # Task name
+    data.batch_size=32\ # Batch size
+    hdf5_name=crops/hdf5/loo/all_but_Aq1T0_270z_770z_2.h5\ # HDF5 file containing the training data (<code base>/data/<hdf5_name>)
+    data.num_workers=19\ # Number of parallel workers (number optimized for JZ)
+```
+
+## Using a slurm configuration file
 
 Here is a job reservation config file for slurm called `segmentation.slurm`
 It can be used: `sbatch segmentation.slurm <command>`
@@ -86,24 +116,7 @@ set -x
 srun $@
 ```
 
-This script is really generic. We define the reservation parameters then we forward the command to run.
-
-Here is an example of such command to run: `run_segmentation.sh`
-
-```sh
-#!/bin/bash
-
-# Move to the source code
-cd $WORK/3D_CT-Forams
-
-# We start the training
-# We can override the parameters here
-HYDRA_FULL_ERROR=1 python3 ctforams/train.py\
-    task_name="aq1"\ # Task name
-    data.batch_size=32\ # Batch size
-    hdf5_name=Aq1Aq3.h5\ # HDF5 file containing the training data (<code base>/data/<hdf5_name>)
-    data.num_workers=19\ # Number of parallel workers (number optimized for JZ)
-```
+This script is really generic. We define the reservation parameters then we forward the command to run (i.e `./run_segmentation.sh` script)
 
 All data ressources are located here: `$ALL_CCFRWORK/data`
 **A data backup exists in `$ALL_CCFRSTORE`**
