@@ -76,16 +76,16 @@ def segmentation_inference(
         # Iterate over Z
         n_over_z = int(np.ceil(x.shape[-1] / z_step))
 
-        # counts = tif.memmap(overlap_path, shape=x.shape, dtype=np.float16)
-        counts = np.zeros(x.shape, dtype=np.float16)
+        # gaussian_weights = tif.memmap(overlap_path, shape=x.shape, dtype=np.float16)
+        gaussian_weights = np.zeros(x.shape, dtype=np.float16)
 
-        # Compute all gaussian weights
+        # Compute all gaussian weights sums
         for k in tqdm(range(n_over_z)):
             z_start = min(k * z_step, x.shape[-1] - z_size)
             z_end = z_start + z_size
-            sub_arr = counts[..., z_start:z_end]
+            sub_arr = gaussian_weights[..., z_start:z_end]
             gaussian = get_gaussian(sub_arr.shape)
-            counts[..., z_start:z_end] += gaussian
+            gaussian_weights[..., z_start:z_end] += gaussian
 
         for k in tqdm(range(n_over_z), desc="Iterating over Z slices", total=n_over_z, leave=False):
             z_start = min(k * z_step, x.shape[-1] - z_size)
@@ -102,7 +102,7 @@ def segmentation_inference(
             gaussian = get_gaussian(sub_y.shape)
 
             # a*(1-w) + b*w => weighted sum with w in [0;1.0]
-            wsub_y = (sub_y * gaussian) / counts[..., z_start:z_end]
+            wsub_y = (sub_y * gaussian) / gaussian_weights[..., z_start:z_end]
 
             y[..., z_start:z_end] += wsub_y
 

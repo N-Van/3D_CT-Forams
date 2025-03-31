@@ -69,6 +69,7 @@ def iterative_matching(dist_mat: np.ndarray, max_distance: float) -> List[Tuple[
     matched_items = []
 
     cdist_mat = dist_mat.copy()
+    # Max can also be max=min so we take max + 1 to consider the min value
     max_value = np.max(cdist_mat) + 1
 
     while np.min(cdist_mat) < max_value:

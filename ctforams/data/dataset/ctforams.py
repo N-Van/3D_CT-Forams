@@ -206,6 +206,7 @@ class CTForamsDataset(Dataset):
         #     # compute loss on high confidence pixels only
         #     weights[y < 0.5] = 0.0
 
+        # x.shape = (C, X, Y, Z), y.shape = (C, X, Y, Z), weights.shape = (C, X, Y, Z)
         return x, y, weights
 
     def __len__(self):

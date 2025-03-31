@@ -65,6 +65,7 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     log.info(f"Instantiating datamodule <{cfg.data._target_}>")
     datamodule: LightningDataModule = instantiate(cfg.data)
 
+    # Only when using OneCycleLR learning rate scheduler
     if cfg.get("model"):
         if cfg.get("model").get("scheduler"):
             scheduler_name = cfg.get("model").get("scheduler").get("_target_")

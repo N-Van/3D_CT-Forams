@@ -15,9 +15,6 @@ class CTForamsDataModule(LightningDataModule):
         test_data,
         augmentation=None,
         batch_size: int = 64,
-        num_workers: int = 0,
-        pin_memory: bool = False,
-        crop_size: int = 64,
     ) -> None:
         super().__init__()
 
